@@ -1,0 +1,6 @@
+@KwikNesta.Gateway.Svc.API_HostAddress = http://localhost:5018
+
+GET {{KwikNesta.Gateway.Svc.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

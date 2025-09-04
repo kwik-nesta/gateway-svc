@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{2822BEBB-0FE5-4F49-83A8-8ABDAE05BDB5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KwikNesta.Gateway.Svc.API", "src\KwikNesta.Gateway.Svc.API\KwikNesta.Gateway.Svc.API.csproj", "{0E33BA43-7189-455B-9F47-5C0F8D33CC11}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0E33BA43-7189-455B-9F47-5C0F8D33CC11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E33BA43-7189-455B-9F47-5C0F8D33CC11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E33BA43-7189-455B-9F47-5C0F8D33CC11}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E33BA43-7189-455B-9F47-5C0F8D33CC11}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0E33BA43-7189-455B-9F47-5C0F8D33CC11} = {2822BEBB-0FE5-4F49-83A8-8ABDAE05BDB5}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {379FA837-C15F-416B-8578-E0E848CD8294}
+	EndGlobalSection
+EndGlobal
