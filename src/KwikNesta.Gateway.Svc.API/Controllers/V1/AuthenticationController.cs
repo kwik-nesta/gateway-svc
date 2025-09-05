@@ -1,5 +1,7 @@
-﻿using KwikNesta.Gateway.Svc.API.Grpc.Identity;
+﻿using KwikNesta.Gateway.Svc.API.DTOs;
+using KwikNesta.Gateway.Svc.API.Grpc.Identity;
 using KwikNesta.Gateway.Svc.API.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KwikNesta.Gateway.Svc.API.Controllers.V1
@@ -68,6 +70,246 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         {
             var tokens = await _service.Authentication.LoginAsync(request);
             return Ok(tokens);
+        }
+
+        /// <summary>
+        /// Registers a new user account.
+        /// </summary>
+        /// <param name="request">The registration details including email, password, and other required info.</param>
+        /// <returns>A <see cref="RegisterResponse"/> indicating the result of the registration process.</returns>
+        /// <response code="200">Registration successful.</response>
+        /// <response code="400">Invalid registration data provided.</response>
+        /// <response code="401">Unauthorized attempt to register.</response>
+        /// <response code="500">Internal server error.</response>
+        [ProducesResponseType(typeof(RegisterResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        {
+            var response = await _service.Authentication.RegisterAsync(request);
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// Verifies a user's account using an OTP (One-Time Password).
+        /// </summary>
+        /// <param name="request">The verification request containing the OTP.</param>
+        /// <returns>A <see cref="StringResponse"/> with verification status.</returns>
+        /// <response code="200">Verification successful.</response>
+        /// <response code="400">Invalid OTP or request.</response>
+        /// <response code="500">Internal server error.</response>
+        [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPut("verify")]
+        public async Task<IActionResult> Verify([FromBody] OtpRequest request)
+        {
+            var response = await _service.Authentication.VerifyAsync(request);
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// Resends the OTP (One-Time Password) for account verification.
+        /// </summary>
+        /// <param name="request">The resend OTP request.</param>
+        /// <returns>A <see cref="StringResponse"/> indicating resend status.</returns>
+        /// <response code="200">OTP resent successfully.</response>
+        /// <response code="400">Invalid request.</response>
+        /// <response code="500">Internal server error.</response>
+        [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPut("resend-otp")]
+        public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequest request)
+        {
+            var response = await _service.Authentication.ResendOtpAsync(request);
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// Refreshes a user's access token using a valid refresh token.
+        /// </summary>
+        /// <param name="request">The refresh token request.</param>
+        /// <returns>A <see cref="TokenResponse"/> containing the new access token.</returns>
+        /// <response code="200">Token refreshed successfully.</response>
+        /// <response code="400">Invalid refresh token provided.</response>
+        /// <response code="500">Internal server error.</response>
+        [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPut("refresh")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            var response = await _service.Authentication.RefreshAccessTokenAsync(request);
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// Initiates the password reset process by sending a reset link or OTP to the user.
+        /// </summary>
+        /// <param name="request">The email request containing the user's email address.</param>
+        /// <returns>A <see cref="StringResponse"/> with reset initiation status.</returns>
+        /// <response code="200">Password reset request successful.</response>
+        /// <response code="400">Invalid email provided.</response>
+        /// <response code="500">Internal server error.</response>
+        [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPut("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] EmailRequest request)
+        {
+            var response = await _service.Authentication.RequestPasswordResetAsync(request);
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// Changes the forgotten password using a valid reset token/OTP.
+        /// </summary>
+        /// <param name="request">The change-forgot-password request.</param>
+        /// <returns>A <see cref="StringResponse"/> with operation status.</returns>
+        /// <response code="200">If the password was successfully changed.</response>
+        /// <response code="400">If the reset token is invalid or expired.</response>
+        /// <response code="500">If an internal server error occurs.</response>
+        [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPut("change-forgot-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangeForgotPasswordDto request)
+        {
+            var response = await _service.Authentication.ChangeForgotPasswordAsync(request);
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// Changes the current user's password.
+        /// </summary>
+        /// <param name="request">The change password request containing old and new passwords.</param>
+        /// <returns>A <see cref="StringResponse"/> with result status.</returns>
+        /// <response code="200">If the password was changed successfully.</response>
+        /// <response code="400">If the request is invalid.</response>
+        /// <response code="500">If an internal server error occurs.</response>
+        [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPut("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            var response = await _service.Authentication.ChangePasswordAsync(request);
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// Deactivates a user account.
+        /// </summary>
+        /// <param name="userId">The ID of the user to deactivate.</param>
+        /// <returns>A <see cref="StringResponse"/> with deactivation result.</returns>
+        /// <response code="200">If the account was deactivated successfully.</response>
+        /// <response code="400">If the request is invalid.</response>
+        /// <response code="500">If an internal server error occurs.</response>
+        [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPut("deactivate-account/{userId}")]
+        [Authorize]
+        public async Task<IActionResult> Deactivate([FromRoute] string userId)
+        {
+            var response = await _service.Authentication.DeactivateAsync(new DeactivateAccountRequest
+            {
+                Request = new UserIdRequest
+                {
+                    UserId = userId
+                }
+            });
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// Reactivates a deactivated account using OTP verification.
+        /// </summary>
+        /// <param name="request">The OTP reactivation request.</param>
+        /// <returns>A <see cref="StringResponse"/> with reactivation status.</returns>
+        /// <response code="200">If the account was reactivated successfully.</response>
+        /// <response code="400">If the OTP is invalid or expired.</response>
+        /// <response code="500">If an internal server error occurs.</response>
+        [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPut("reactivate-account")]
+        public async Task<IActionResult> Reactivate([FromBody] OtpRequest request)
+        {
+            var response = await _service.Authentication.ReactivateAsync(new ReactivateAccountRequest
+            {
+                Request = request,
+            });
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// Requests reactivation for a previously deactivated account.
+        /// </summary>
+        /// <param name="request">The email request identifying the account.</param>
+        /// <returns>A <see cref="StringResponse"/> with request status.</returns>
+        /// <response code="200">If the reactivation request was submitted successfully.</response>
+        /// <response code="400">If the request is invalid.</response>
+        /// <response code="500">If an internal server error occurs.</response>
+        [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPut("reactivate-account-request")]
+        public async Task<IActionResult> ReactivateRequest([FromBody] EmailRequest request)
+        {
+            var response = await _service.Authentication.RequestReactivationAsync(new RequestAccountReactivationRequest
+            {
+                Request = request
+            });
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// Suspends a user account (admin only).
+        /// </summary>
+        /// <param name="request">The suspension request.</param>
+        /// <returns>A <see cref="StringResponse"/> with suspension result.</returns>
+        /// <response code="200">If the account was suspended successfully.</response>
+        /// <response code="400">If the request is invalid.</response>
+        /// <response code="500">If an internal server error occurs.</response>
+        [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPut("suspend-account")]
+        [Authorize(Roles = "Admin, SuperAdmin")]
+        public async Task<IActionResult> Suspend([FromBody] SuspendUserRequest request)
+        {
+            var response = await _service.Authentication.SuspendAsync(request);
+            return Ok(response);
+        }
+
+        // <summary>
+        /// Lifts a suspension from a user account (admin only).
+        /// </summary>
+        /// <param name="userId">The ID of the user to lift the suspension for.</param>
+        /// <returns>A <see cref="StringResponse"/> with suspension removal status.</returns>
+        /// <response code="200">If the suspension was lifted successfully.</response>
+        /// <response code="400">If the request is invalid.</response>
+        /// <response code="500">If an internal server error occurs.</response>
+        [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPut("lift-suspension/{userId}")]
+        [Authorize(Roles = "Admin, SuperAdmin")]
+        public async Task<IActionResult> LiftSuspension([FromRoute] string userId)
+        {
+            var response = await _service.Authentication.ListSuspensionAsync(new LiftUserSuspensionRequest
+            {
+                Request = new UserIdRequest
+                {
+                    UserId = userId
+                }
+            });
+            return Ok(response);
         }
     }
 }
