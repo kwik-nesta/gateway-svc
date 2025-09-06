@@ -26,6 +26,7 @@
 	  <Protobuf Include="Grpc\Identity\user.proto" GrpcServices="Client" />
 	  <!--System Support Service-->
 	  <Protobuf Include="Grpc\SystemSupport\location.proto" GrpcServices="Client" />
+	  <Protobuf Include="Grpc\SystemSupport\dataload.proto" GrpcServices="Client" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Grpc\Property\" />

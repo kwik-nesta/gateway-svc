@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+option csharp_namespace = "KwikNesta.Gateway.Svc.API.Grpc.SystemSupport";
+
+service DataloadService {
+	rpc RunLocationDataload (DataloadEmpty) returns (DataloadStringResponse);
+}
+
+message DataloadEmpty {}
+
+message DataloadStringResponse {
+	string message = 1;
+	int32 status = 2;
+}

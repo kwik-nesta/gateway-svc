@@ -4,5 +4,6 @@
     {
         IGrpcAuthenticationServiceImpl Authentication { get; }
         IGrpcUserServiceImpl User { get; }
+        IGrpcLocationService Location { get; }
     }
 }

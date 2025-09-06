@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KwikNesta.Gateway.Svc.API.Controllers.V1
 {
-    [Route("api/v{version:apiversion}/users")]
+    [Route("api/v{version:apiversion}/user")]
     [ApiVersion("1.0")]
     [ApiController]
     public class UserController : ControllerBase

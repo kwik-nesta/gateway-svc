@@ -62,6 +62,10 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
             {
                 o.Address = new Uri(grpcServers.SystemSupportService);
             });
+            services.AddGrpcClient<DataloadService.DataloadServiceClient>(o =>
+            {
+                o.Address = new Uri(grpcServers.SystemSupportService);
+            });
 
             return services;
         }
