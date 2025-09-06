@@ -8,6 +8,14 @@ using Microsoft.OpenApi.Models;
 using System.Threading.RateLimiting;
 using KwikNesta.Gateway.Svc.API.Services.Interfaces;
 using KwikNesta.Gateway.Svc.API.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Security.Claims;
+using static System.Collections.Specialized.BitVector32;
+using Microsoft.Extensions.Configuration;
+using static System.Net.Mime.MediaTypeNames;
+using System.Text.Json;
 
 namespace KwikNesta.Gateway.Svc.API.Extensions
 {
@@ -25,6 +33,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                     .AllowAnyHeader()
                     .AllowAnyMethod());
             })
+            .AddJwtAuth(configuration)
             .AddThrotter()
             .AddSwaggerDocs()
             .AddApiVersion()
@@ -138,5 +147,93 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
             });
         }
 
+        private static IServiceCollection AddJwtAuth(this IServiceCollection services, IConfiguration configuration)
+        {
+            var jwtSettings = configuration.GetSection("Jwt")
+                .Get<JwtSetting>() ?? throw new ArgumentNullException("JWT Config can not be null");
+            
+            services.AddAuthentication("Bearer")
+                .AddJwtBearer("Bearer", options =>
+                {
+                    options.TokenValidationParameters = new()
+                    {
+                        ValidateIssuer = true,
+                        ValidIssuer = jwtSettings.IdentityService,
+
+                        ValidateLifetime = true,
+
+                        ValidateAudience = true,
+                        ValidAudience = jwtSettings.Audience,
+
+                        RoleClaimType = jwtSettings.RoleClaim,
+
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.IssuerSigningKey))
+                    };
+
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnTokenValidated = async context =>
+                        {
+                            await ValidateUser(context);
+                        },
+                        OnChallenge = async context =>
+                        {
+                            // stop the default behavior (and the WWW-Authenticate header)
+                            context.HandleResponse();
+                            var statusCode = StatusCodes.Status401Unauthorized;
+                            var message = "Unauthorized. Please login";
+
+                            // Check if the failure is due to token expiration
+                            if (context.AuthenticateFailure is SecurityTokenExpiredException)
+                            {
+                                statusCode = StatusCodes.Status403Forbidden;
+                                message = "Forbidden. Token has expired!";
+                            }
+
+                            context.Response.StatusCode = statusCode;
+                            context.Response.ContentType = "application/json";
+
+                            await context.Response.WriteAsJsonAsync(new
+                            {
+                                Successful = false,
+                                Status = statusCode,
+                                Message = message
+                            });
+                        }
+                    };
+                });
+
+            services.AddAuthorization();
+            return services;
+        }
+
+        private static async Task ValidateUser(TokenValidatedContext context)
+        {
+            var service = context.HttpContext.RequestServices.GetRequiredService<AppUserService.AppUserServiceClient>();
+            var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                context.Fail("Forbidden: Invalid identifier");
+                return;
+            }
+
+            try
+            {
+                var userResponse = await service.GetUserByIdAsync(new GetUserByIdRequest
+                {
+                    UserId = userId
+                });
+                if (userResponse.User == null || userResponse.User.Status != GrpcUserStatus.Active)
+                {
+                    context.Fail("Forbidden: User not found");
+                    return;
+                }
+            }
+            catch (Exception)
+            {
+                context.Fail("Forbidden: User not found");
+                return;
+            }
+        }
     }
 }

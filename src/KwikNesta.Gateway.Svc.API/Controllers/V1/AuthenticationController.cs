@@ -1,4 +1,5 @@
 ﻿using KwikNesta.Gateway.Svc.API.DTOs;
+using KwikNesta.Gateway.Svc.API.Extensions;
 using KwikNesta.Gateway.Svc.API.Grpc.Identity;
 using KwikNesta.Gateway.Svc.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -192,12 +193,15 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         /// <response code="500">If an internal server error occurs.</response>
         [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPut("change-password")]
         [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
-            var response = await _service.Authentication.ChangePasswordAsync(request);
+            var meta = HttpContext.GetHeaderMeta();
+            var response = await _service.Authentication.ChangePasswordAsync(request, meta);
             return Ok(response);
         }
 
@@ -211,18 +215,22 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         /// <response code="500">If an internal server error occurs.</response>
         [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPut("deactivate-account/{userId}")]
         [Authorize]
         public async Task<IActionResult> Deactivate([FromRoute] string userId)
         {
+            var meta = HttpContext.GetHeaderMeta();
+
             var response = await _service.Authentication.DeactivateAsync(new DeactivateAccountRequest
             {
                 Request = new UserIdRequest
                 {
                     UserId = userId
                 }
-            });
+            }, meta);
             return Ok(response);
         }
 
@@ -278,12 +286,16 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         /// <response code="500">If an internal server error occurs.</response>
         [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPut("suspend-account")]
         [Authorize(Roles = "Admin, SuperAdmin")]
         public async Task<IActionResult> Suspend([FromBody] SuspendUserRequest request)
         {
-            var response = await _service.Authentication.SuspendAsync(request);
+            var meta = HttpContext.GetHeaderMeta();
+
+            var response = await _service.Authentication.SuspendAsync(request, meta);
             return Ok(response);
         }
 
@@ -297,18 +309,22 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         /// <response code="500">If an internal server error occurs.</response>
         [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPut("lift-suspension/{userId}")]
         [Authorize(Roles = "Admin, SuperAdmin")]
         public async Task<IActionResult> LiftSuspension([FromRoute] string userId)
         {
+            var meta = HttpContext.GetHeaderMeta();
+
             var response = await _service.Authentication.ListSuspensionAsync(new LiftUserSuspensionRequest
             {
                 Request = new UserIdRequest
                 {
                     UserId = userId
                 }
-            });
+            }, meta);
             return Ok(response);
         }
     }

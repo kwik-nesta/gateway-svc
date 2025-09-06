@@ -1,4 +1,5 @@
-﻿using KwikNesta.Gateway.Svc.API.DTOs;
+﻿using Grpc.Core;
+using KwikNesta.Gateway.Svc.API.DTOs;
 using KwikNesta.Gateway.Svc.API.Grpc.Identity;
 using KwikNesta.Gateway.Svc.API.Services.Interfaces;
 
@@ -7,7 +8,7 @@ namespace KwikNesta.Gateway.Svc.API.Services
     public class GrpcAuthenticationServiceImpl : IGrpcAuthenticationServiceImpl
     {
         private readonly AuthenticationService.AuthenticationServiceClient _service;
-
+        
         public GrpcAuthenticationServiceImpl(AuthenticationService.AuthenticationServiceClient service) 
             => _service = service;
 
@@ -116,9 +117,9 @@ namespace KwikNesta.Gateway.Svc.API.Services
         /// </summary>
         /// <param name="request">The change password request.</param>
         /// <returns>A <see cref="StringResponse"/> with operation result.</returns>
-        public async Task<StringResponse> ChangePasswordAsync(ChangePasswordRequest request)
+        public async Task<StringResponse> ChangePasswordAsync(ChangePasswordRequest request, Metadata meta)
         {
-            var otpResponse = await _service.ChangePasswordAsync(request);
+            var otpResponse = await _service.ChangePasswordAsync(request, meta);
             return otpResponse.Response;
         }
 
@@ -127,9 +128,9 @@ namespace KwikNesta.Gateway.Svc.API.Services
         /// </summary>
         /// <param name="request">The deactivation request.</param>
         /// <returns>A <see cref="StringResponse"/> with deactivation result.</returns>
-        public async Task<StringResponse> DeactivateAsync(DeactivateAccountRequest request)
+        public async Task<StringResponse> DeactivateAsync(DeactivateAccountRequest request, Metadata meta)
         {
-            var otpResponse = await _service.DeactivateAccountAsync(request);
+            var otpResponse = await _service.DeactivateAccountAsync(request, meta);
             return otpResponse.Response;
         }
 
@@ -160,9 +161,9 @@ namespace KwikNesta.Gateway.Svc.API.Services
         /// </summary>
         /// <param name="request">The suspension request.</param>
         /// <returns>A <see cref="StringResponse"/> with suspension result.</returns>
-        public async Task<StringResponse> SuspendAsync(SuspendUserRequest request)
+        public async Task<StringResponse> SuspendAsync(SuspendUserRequest request, Metadata meta)
         {
-            var otpResponse = await _service.SuspendUserAsync(request);
+            var otpResponse = await _service.SuspendUserAsync(request, meta);
             return otpResponse.Response;
         }
 
@@ -171,9 +172,9 @@ namespace KwikNesta.Gateway.Svc.API.Services
         /// </summary>
         /// <param name="request">The lift suspension request.</param>
         /// <returns>A <see cref="StringResponse"/> with result of suspension removal.</returns>
-        public async Task<StringResponse> ListSuspensionAsync(LiftUserSuspensionRequest request)
+        public async Task<StringResponse> ListSuspensionAsync(LiftUserSuspensionRequest request, Metadata meta)
         {
-            var otpResponse = await _service.LiftUserSuspensionAsync(request);
+            var otpResponse = await _service.LiftUserSuspensionAsync(request, meta);
             return otpResponse.Response;
         }
     }

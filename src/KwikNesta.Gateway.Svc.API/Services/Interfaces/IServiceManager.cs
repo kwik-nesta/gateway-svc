@@ -3,5 +3,6 @@
     public interface IServiceManager
     {
         IGrpcAuthenticationServiceImpl Authentication { get; }
+        IGrpcUserServiceImpl User { get; }
     }
 }
