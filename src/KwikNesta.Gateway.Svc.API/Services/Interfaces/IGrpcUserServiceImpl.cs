@@ -9,5 +9,6 @@ namespace KwikNesta.Gateway.Svc.API.Services.Interfaces
         Task<User> GetAuthenticatedUser(Metadata meta);
         Task<GetPagedUsersResponse> GetPagedUsers(UserQuery query, Metadata meta);
         Task<User> GetUserById(string id, Metadata meta);
+        Task<UserStringResponse> UpdateBasicDetails(UpdateBasicUserDetailsRequest request, Metadata entries);
     }
 }

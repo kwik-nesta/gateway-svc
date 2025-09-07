@@ -55,5 +55,11 @@ namespace KwikNesta.Gateway.Svc.API.Services
 
             return userResponse.User;
         }
+
+        public async Task<UserStringResponse> UpdateBasicDetails(UpdateBasicUserDetailsRequest request, Metadata entries)
+        {
+            var updateResponse = await _serviceClient.UpdateBasicUserDetailsAsync(request, entries);
+            return updateResponse.Response;
+        }
     }
 }

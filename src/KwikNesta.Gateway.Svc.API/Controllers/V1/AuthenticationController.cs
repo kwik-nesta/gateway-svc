@@ -104,7 +104,7 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpPut("verify")]
+        [HttpPatch("verify")]
         public async Task<IActionResult> Verify([FromBody] OtpRequest request)
         {
             var response = await _service.Authentication.VerifyAsync(request);
@@ -122,7 +122,7 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpPut("resend-otp")]
+        [HttpPost("resend-otp")]
         public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequest request)
         {
             var response = await _service.Authentication.ResendOtpAsync(request);
@@ -140,7 +140,7 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpPut("refresh")]
+        [HttpPost("refresh")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
             var response = await _service.Authentication.RefreshAccessTokenAsync(request);
@@ -158,7 +158,7 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpPut("reset-password")]
+        [HttpPatch("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] EmailRequest request)
         {
             var response = await _service.Authentication.RequestPasswordResetAsync(request);
@@ -176,7 +176,7 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpPut("change-forgot-password")]
+        [HttpPatch("change-forgot-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangeForgotPasswordDto request)
         {
             var response = await _service.Authentication.ChangeForgotPasswordAsync(request);
@@ -196,7 +196,7 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpPut("change-password")]
+        [HttpPatch("change-password")]
         [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
@@ -218,7 +218,7 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpPut("deactivate-account/{userId}")]
+        [HttpPatch("deactivate-account/{userId}")]
         [Authorize]
         public async Task<IActionResult> Deactivate([FromRoute] string userId)
         {
@@ -245,7 +245,7 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpPut("reactivate-account")]
+        [HttpPatch("reactivate-account")]
         public async Task<IActionResult> Reactivate([FromBody] OtpRequest request)
         {
             var response = await _service.Authentication.ReactivateAsync(new ReactivateAccountRequest
@@ -266,7 +266,7 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         [ProducesResponseType(typeof(StringResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpPut("reactivate-account-request")]
+        [HttpPatch("reactivate-account-request")]
         public async Task<IActionResult> ReactivateRequest([FromBody] EmailRequest request)
         {
             var response = await _service.Authentication.RequestReactivationAsync(new RequestAccountReactivationRequest
@@ -289,7 +289,7 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpPut("suspend-account")]
+        [HttpPatch("suspend-account")]
         [Authorize(Roles = "Admin, SuperAdmin")]
         public async Task<IActionResult> Suspend([FromBody] SuspendUserRequest request)
         {
@@ -312,7 +312,7 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpPut("lift-suspension/{userId}")]
+        [HttpPatch("lift-suspension/{userId}")]
         [Authorize(Roles = "Admin, SuperAdmin")]
         public async Task<IActionResult> LiftSuspension([FromRoute] string userId)
         {

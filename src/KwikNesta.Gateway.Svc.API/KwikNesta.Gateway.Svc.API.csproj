@@ -18,7 +18,7 @@
 	 <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.*" />
 	 <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.*" />
 	 <PackageReference Include="DiagnosKit.Core" Version="2.2.2" />
-	 <PackageReference Include="KwikNesta.Contracts.Core" Version="1.2.4" />
+	 <PackageReference Include="KwikNesta.Contracts.Core" Version="1.2.5" />
  </ItemGroup>
   <ItemGroup>
 	  <!--Identity Service-->
@@ -27,6 +27,7 @@
 	  <!--System Support Service-->
 	  <Protobuf Include="Grpc\SystemSupport\location.proto" GrpcServices="Client" />
 	  <Protobuf Include="Grpc\SystemSupport\dataload.proto" GrpcServices="Client" />
+	  <Protobuf Include="Grpc\SystemSupport\auditlogs.proto" GrpcServices="Client" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Grpc\Property\" />

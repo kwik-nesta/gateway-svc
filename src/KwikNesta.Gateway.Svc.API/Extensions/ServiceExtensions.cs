@@ -1,21 +1,18 @@
 ﻿using DiagnosKit.Core.Extensions;
 using KwikNesta.Gateway.Svc.API.Grpc.Identity;
 using KwikNesta.Gateway.Svc.API.Grpc.SystemSupport;
-using KwikNesta.Gateway.Svc.API.Settings;
-using Microsoft.AspNetCore.Mvc.Versioning;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.OpenApi.Models;
-using System.Threading.RateLimiting;
-using KwikNesta.Gateway.Svc.API.Services.Interfaces;
 using KwikNesta.Gateway.Svc.API.Services;
+using KwikNesta.Gateway.Svc.API.Services.Interfaces;
+using KwikNesta.Gateway.Svc.API.Settings;
+using KwikNesta.SystemSupport.Svc.Contracts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using Microsoft.OpenApi.Models;
 using System.Security.Claims;
-using static System.Collections.Specialized.BitVector32;
-using Microsoft.Extensions.Configuration;
-using static System.Net.Mime.MediaTypeNames;
-using System.Text.Json;
+using System.Text;
+using System.Threading.RateLimiting;
 
 namespace KwikNesta.Gateway.Svc.API.Extensions
 {
@@ -63,6 +60,10 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                 o.Address = new Uri(grpcServers.SystemSupportService);
             });
             services.AddGrpcClient<DataloadService.DataloadServiceClient>(o =>
+            {
+                o.Address = new Uri(grpcServers.SystemSupportService);
+            });
+            services.AddGrpcClient<AuditLogsService.AuditLogsServiceClient>(o =>
             {
                 o.Address = new Uri(grpcServers.SystemSupportService);
             });
