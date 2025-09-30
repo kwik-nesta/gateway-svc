@@ -1,4 +1,5 @@
 ﻿using DiagnosKit.Core.Extensions;
+using KwikNesta.Contracts.Models;
 using KwikNesta.Gateway.Svc.API.Grpc.Identity;
 using KwikNesta.Gateway.Svc.API.Grpc.SystemSupport;
 using KwikNesta.Gateway.Svc.API.Services;
