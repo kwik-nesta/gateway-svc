@@ -163,7 +163,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                     options.TokenValidationParameters = new()
                     {
                         ValidateIssuer = true,
-                        ValidIssuer = jwtSettings.IdentityService,
+                        ValidIssuer = jwtSettings.Issuer,
 
                         ValidateLifetime = true,
 
