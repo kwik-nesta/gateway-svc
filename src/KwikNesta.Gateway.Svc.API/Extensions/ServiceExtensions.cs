@@ -1,4 +1,7 @@
-﻿using DiagnosKit.Core.Extensions;
+﻿using CrossQueue.Hub.Shared.Extensions;
+using DiagnosKit.Core.Extensions;
+using DRY.MailJetClient.Library.Extensions;
+using EFCore.CrudKit.Library.Extensions;
 using Hangfire;
 using Hangfire.Console;
 using Hangfire.PostgreSql;
@@ -9,6 +12,8 @@ using KwikNesta.Gateway.Svc.API.Services;
 using KwikNesta.Gateway.Svc.API.Services.Interfaces;
 using KwikNesta.Gateway.Svc.API.Settings;
 using KwikNesta.Gateway.Svc.Application.Interfaces;
+using KwikNesta.Gateway.Svc.Infrastructure.Interfaces;
+using KwikNesta.Gateway.Svc.Infrastructure.Jobs;
 using KwikNesta.Gateway.Svc.Infrastructure.Persistence;
 using KwikNesta.Gateway.Svc.Infrastructure.Workers;
 using KwikNesta.SystemSupport.Svc.Contracts;
@@ -41,15 +46,21 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
             })
             .RegisterDbContext(configuration)
             .RegisterWorkers()
+            .AddScoped<IMessageProcessor, MessageProcessor>()
             .ConfigureHangfire(configuration)
             .AddJwtAuth(configuration)
             .AddThrotter()
             .AddSwaggerDocs()
+            .AddCrossQueueHubRabbitMqBus(configuration)
             .AddApiVersion()
             .ConfigureRefit(configuration)
+            .RegisterGrpcClients(configuration)
+            .AddDiagnosKitObservability(serviceName: serviceName, serviceVersion: "1.0.0")
+            .ConfigureMailJet(configuration)
             .AddLoggerManager();
-            services.RegisterGrpcClients(configuration)
-                .AddDiagnosKitObservability(serviceName: serviceName, serviceVersion: "1.0.0");
+            services
+                .ConfigureEFCoreDataForge<SupportDbContext>(false);
+
             return services;
         }
 
@@ -108,6 +119,9 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
 
             services.AddRefitClient<IIdentityServiceClient>()
                 .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.IdentityService));
+
+            services.AddRefitClient<ILocationClientService>()
+                .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.ExternalLocationClient));
 
             return services;
         }

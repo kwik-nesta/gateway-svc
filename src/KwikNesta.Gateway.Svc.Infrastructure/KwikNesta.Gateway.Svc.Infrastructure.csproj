@@ -6,7 +6,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="KwikNesta.Contracts.Core" Version="1.2.9" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.19" />
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.19" />
@@ -16,5 +15,9 @@
 		<PackageReference Include="Hangfire.Console" Version="1.4.3" />
 		<PackageReference Include="CrossQueue.Hub" Version="1.2.0" />
 		<PackageReference Include="DiagnosKit.Core" Version="2.2.2" />
+		<PackageReference Include="DRY.MailJetClient.Library" Version="2.0.0" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\KwikNesta.Gateway.Svc.Application\KwikNesta.Gateway.Svc.Application.csproj" />
 	</ItemGroup>
 </Project>

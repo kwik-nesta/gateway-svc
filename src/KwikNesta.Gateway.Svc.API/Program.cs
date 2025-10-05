@@ -1,7 +1,6 @@
 using DiagnosKit.Core.Configurations;
 using DiagnosKit.Core.Logging;
 using DiagnosKit.Core.Logging.Contracts;
-using Hangfire;
 using KwikNesta.Gateway.Svc.API.Extensions;
 using KwikNesta.Gateway.Svc.API.Middlewares;
 

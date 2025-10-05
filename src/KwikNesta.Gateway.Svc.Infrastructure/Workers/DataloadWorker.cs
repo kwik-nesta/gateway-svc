@@ -1,8 +1,10 @@
 ﻿using CrossQueue.Hub.Services.Interfaces;
 using CSharpTypes.Extensions.Enumeration;
 using DiagnosKit.Core.Logging.Contracts;
+using Hangfire;
 using KwikNesta.Contracts.Enums;
 using KwikNesta.Contracts.Models;
+using KwikNesta.Gateway.Svc.Infrastructure.Interfaces;
 using Microsoft.Extensions.Hosting;
 
 namespace KwikNesta.Gateway.Svc.Infrastructure.Workers
@@ -27,8 +29,10 @@ namespace KwikNesta.Gateway.Svc.Infrastructure.Workers
             {
                 _logger.LogInfo("Received data-load request.\nType: {Type}. \nRequest By: {RequesterEmail}.\nDate: {Date}",
                     msg.Type.GetDescription(), msg.RequesterEmail, msg.Date);
-                
-                //BackgroundJob.Enqueue<IMessageProcessor>(pr => pr.MethodName);
+
+                BackgroundJob.Enqueue<IMessageProcessor>(pr => pr.HandleAsync(msg, null!));
+                await Task.CompletedTask;
+
             }, routingKey: MQRoutingKey.DataLoad.GetDescription());
 
             await Task.CompletedTask;

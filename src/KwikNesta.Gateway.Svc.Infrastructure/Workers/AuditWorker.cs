@@ -1,8 +1,10 @@
 ﻿using CrossQueue.Hub.Services.Interfaces;
 using CSharpTypes.Extensions.Enumeration;
 using DiagnosKit.Core.Logging.Contracts;
+using Hangfire;
 using KwikNesta.Contracts.Enums;
 using KwikNesta.Contracts.Models;
+using KwikNesta.Gateway.Svc.Infrastructure.Interfaces;
 using Microsoft.Extensions.Hosting;
 
 namespace KwikNesta.Gateway.Svc.Infrastructure.Workers
@@ -26,7 +28,8 @@ namespace KwikNesta.Gateway.Svc.Infrastructure.Workers
             _pubSub.Subscribe<AuditLog>(MQs.Audit.GetDescription(), async msg =>
             {
                 _logger.LogInfo("Received audit for action: {Action}", msg.Action.GetDescription());
-                //BackgroundJob.Enqueue<IMessageProcessor>(pr => pr.MethodName);
+                BackgroundJob.Enqueue<IMessageProcessor>(pr => pr.HandleAsync(msg, null!));
+                await Task.CompletedTask;
 
             }, routingKey: MQRoutingKey.AuditTrails.GetDescription());
 
