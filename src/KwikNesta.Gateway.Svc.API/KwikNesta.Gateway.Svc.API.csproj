@@ -4,6 +4,9 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>38f62cd1-ac97-45dd-a76e-8bd8f1a6dafc</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerfileContext>..\..</DockerfileContext>
   </PropertyGroup>
  <ItemGroup>
 	<PackageReference Include="Google.Protobuf" Version="3.32.0" />
@@ -14,6 +17,7 @@
 		<PrivateAssets>all</PrivateAssets>
 		<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	</PackageReference>
+	 <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
 	 <PackageReference Include="Refit.HttpClientFactory" Version="8.0.0" />
 	<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
 
