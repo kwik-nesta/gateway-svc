@@ -4,7 +4,7 @@ using DiagnosKit.Core.Logging.Contracts;
 using Hangfire;
 using KwikNesta.Contracts.Enums;
 using KwikNesta.Contracts.Models;
-using KwikNesta.Gateway.Svc.Infrastructure.Interfaces;
+using KwikNesta.Gateway.Svc.Application.Interfaces;
 using Microsoft.Extensions.Hosting;
 
 namespace KwikNesta.Gateway.Svc.Infrastructure.Workers

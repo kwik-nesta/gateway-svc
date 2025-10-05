@@ -12,7 +12,6 @@ using KwikNesta.Gateway.Svc.API.Services;
 using KwikNesta.Gateway.Svc.API.Services.Interfaces;
 using KwikNesta.Gateway.Svc.API.Settings;
 using KwikNesta.Gateway.Svc.Application.Interfaces;
-using KwikNesta.Gateway.Svc.Infrastructure.Interfaces;
 using KwikNesta.Gateway.Svc.Infrastructure.Jobs;
 using KwikNesta.Gateway.Svc.Infrastructure.Persistence;
 using KwikNesta.Gateway.Svc.Infrastructure.Workers;

@@ -1,7 +1,7 @@
 ﻿using Hangfire.Server;
 using KwikNesta.Contracts.Models;
 
-namespace KwikNesta.Gateway.Svc.Infrastructure.Interfaces
+namespace KwikNesta.Gateway.Svc.Application.Interfaces
 {
     public interface IMessageProcessor
     {

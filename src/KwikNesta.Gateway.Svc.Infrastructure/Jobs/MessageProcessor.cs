@@ -9,7 +9,6 @@ using KwikNesta.Contracts.Models;
 using KwikNesta.Contracts.Models.Location;
 using KwikNesta.Gateway.Svc.Application.Interfaces;
 using KwikNesta.Gateway.Svc.Infrastructure.Extensions;
-using KwikNesta.Gateway.Svc.Infrastructure.Interfaces;
 using Microsoft.Extensions.Hosting;
 
 namespace KwikNesta.Gateway.Svc.Infrastructure.Jobs

@@ -7,6 +7,7 @@
   </PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="KwikNesta.Contracts.Core" Version="1.3.1" />
+		<PackageReference Include="Hangfire.Console" Version="1.4.3" />
 		<PackageReference Include="Refit" Version="8.0.0" />
 	</ItemGroup>
 </Project>
