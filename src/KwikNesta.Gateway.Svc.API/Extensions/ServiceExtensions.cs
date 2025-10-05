@@ -25,6 +25,8 @@ using Microsoft.OpenApi.Models;
 using Refit;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 using System.Threading.RateLimiting;
 
 namespace KwikNesta.Gateway.Svc.API.Extensions
@@ -113,13 +115,26 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
         private static IServiceCollection ConfigureRefit(this IServiceCollection services,
                                                         IConfiguration configuration)
         {
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            };
+
+            // Refit settings using System.Text.Json with the options above
+            var refitSettings = new RefitSettings
+            {
+                ContentSerializer = new SystemTextJsonContentSerializer(options)
+            };
+
             var servers = configuration.GetSection("KwikNestaServers").Get<KwikNestaServers>() ??
                 throw new ArgumentNullException("KwikNestaServers section is null");
 
-            services.AddRefitClient<IIdentityServiceClient>()
+            services.AddRefitClient<IIdentityServiceClient>(refitSettings)
                 .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.IdentityService));
 
-            services.AddRefitClient<ILocationClientService>()
+            services.AddRefitClient<ILocationClientService>(refitSettings)
                 .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.ExternalLocationClient));
 
             return services;

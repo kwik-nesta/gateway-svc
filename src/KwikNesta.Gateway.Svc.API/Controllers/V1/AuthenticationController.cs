@@ -82,20 +82,19 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         /// Registers a new user account.
         /// </summary>
         /// <param name="request">The registration details including email, password, and other required info.</param>
-        /// <returns>A <see cref="RegisterResponse"/> indicating the result of the registration process.</returns>
+        /// <returns>A <see cref="RegisterResponseDto"/> indicating the result of the registration process.</returns>
         /// <response code="200">Registration successful.</response>
         /// <response code="400">Invalid registration data provided.</response>
         /// <response code="401">Unauthorized attempt to register.</response>
         /// <response code="500">Internal server error.</response>
-        [ProducesResponseType(typeof(RegisterResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(RegisterResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        public async Task<IActionResult> Register([FromBody] RegisterCommand command)
         {
-            var response = await _service.Authentication.RegisterAsync(request);
-            return Ok(response);
+            return FromApiResponse(await _identityService.RegisterAsyncV1(command));
         }
 
         /// <summary>
@@ -110,10 +109,9 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPatch("verify")]
-        public async Task<IActionResult> Verify([FromBody] OtpRequest request)
+        public async Task<IActionResult> Verify([FromBody] VerificationCommand command)
         {
-            var response = await _service.Authentication.VerifyAsync(request);
-            return Ok(response);
+            return FromApiResponse(await _identityService.VerifyAccount(command));
         }
 
         /// <summary>

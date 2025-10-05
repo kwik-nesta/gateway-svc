@@ -79,14 +79,14 @@ namespace KwikNesta.Gateway.Svc.Infrastructure.Jobs
                     var isSent = await _mailJet.SendAsync(message.EmailAddress, template, message.Subject);
                     if (isSent)
                     {
-                        _logger.LogInfo("Password reset notification email successfully sent to {EmailAddress}", message.EmailAddress);
-                        context.WriteLine("Password reset notification email successfully sent to {EmailAddress}", message.EmailAddress);
+                        _logger.LogInfo("Password reset notification email successfully sent to {0}", message.EmailAddress);
+                        context.WriteLine("Password reset notification email successfully sent to {0}", message.EmailAddress);
                         return;
                     }
                     else
                     {
-                        _logger.LogWarn("Password reset notification email failed for {EmailAddress}", message.EmailAddress);
-                        context.WriteLine("Password reset notification email failed for {EmailAddress}", message.EmailAddress);
+                        _logger.LogWarn("Password reset notification email failed for {0}", message.EmailAddress);
+                        context.WriteLine("Password reset notification email failed for {0}", message.EmailAddress);
                         return;
                     }
                 }
