@@ -45,8 +45,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
             app.MapControllers();
 
             // Health endpoints (open access for k8s/ops)
-            app.MapGet("/health/live", () => Results.Ok("OK"));
-            app.MapGet("/health/ready", () => Results.Ok("READY"));
+            app.MapGet("/", () => Results.Ok("OK"));
 
             return app;
         }

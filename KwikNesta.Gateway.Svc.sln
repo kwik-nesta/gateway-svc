@@ -7,6 +7,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{2822BEBB-0FE
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KwikNesta.Gateway.Svc.API", "src\KwikNesta.Gateway.Svc.API\KwikNesta.Gateway.Svc.API.csproj", "{0E33BA43-7189-455B-9F47-5C0F8D33CC11}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KwikNesta.Gateway.Svc.Application", "src\KwikNesta.Gateway.Svc.Application\KwikNesta.Gateway.Svc.Application.csproj", "{8A27D90B-3567-4E75-8B96-A20918CF2357}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,6 +19,10 @@ Global
 		{0E33BA43-7189-455B-9F47-5C0F8D33CC11}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0E33BA43-7189-455B-9F47-5C0F8D33CC11}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0E33BA43-7189-455B-9F47-5C0F8D33CC11}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A27D90B-3567-4E75-8B96-A20918CF2357}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A27D90B-3567-4E75-8B96-A20918CF2357}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A27D90B-3567-4E75-8B96-A20918CF2357}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A27D90B-3567-4E75-8B96-A20918CF2357}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

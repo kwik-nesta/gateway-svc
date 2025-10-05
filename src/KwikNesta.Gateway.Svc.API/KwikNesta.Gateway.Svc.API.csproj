@@ -8,17 +8,18 @@
  <ItemGroup>
 	<PackageReference Include="Google.Protobuf" Version="3.32.0" />
 	<PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
+	<PackageReference Include="Grpc.Net.Client.Web" Version="2.71.0" />
 	<PackageReference Include="Grpc.Net.ClientFactory" Version="2.71.0" />
-	<PackageReference Include="Grpc.Tools" Version="2.72.0">
+	 <PackageReference Include="Grpc.Tools" Version="2.72.0">
 		<PrivateAssets>all</PrivateAssets>
 		<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	</PackageReference>
+	 <PackageReference Include="Refit.HttpClientFactory" Version="8.0.0" />
 	<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
 
 	 <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.*" />
 	 <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.*" />
 	 <PackageReference Include="DiagnosKit.Core" Version="2.2.2" />
-	 <PackageReference Include="KwikNesta.Contracts.Core" Version="1.2.9" />
  </ItemGroup>
   <ItemGroup>
 	  <!--Identity Service-->
@@ -32,6 +33,9 @@
   <ItemGroup>
     <Folder Include="Grpc\Property\" />
     <Folder Include="Grpc\Payment\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\KwikNesta.Gateway.Svc.Application\KwikNesta.Gateway.Svc.Application.csproj" />
   </ItemGroup>
 
 </Project>

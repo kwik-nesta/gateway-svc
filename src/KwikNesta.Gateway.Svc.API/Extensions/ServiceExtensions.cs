@@ -5,12 +5,14 @@ using KwikNesta.Gateway.Svc.API.Grpc.SystemSupport;
 using KwikNesta.Gateway.Svc.API.Services;
 using KwikNesta.Gateway.Svc.API.Services.Interfaces;
 using KwikNesta.Gateway.Svc.API.Settings;
+using KwikNesta.Gateway.Svc.Application.Interfaces;
 using KwikNesta.SystemSupport.Svc.Contracts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Refit;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -35,16 +37,29 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
             .AddThrotter()
             .AddSwaggerDocs()
             .AddApiVersion()
+            .ConfigureRefit(configuration)
             .AddLoggerManager();
             services.RegisterGrpcClients(configuration)
                 .AddDiagnosKitObservability(serviceName: serviceName, serviceVersion: "1.0.0");
             return services;
         }
 
+        private static IServiceCollection ConfigureRefit(this IServiceCollection services,
+                                                        IConfiguration configuration)
+        {
+            var servers = configuration.GetSection("KwikNestaServers").Get<KwikNestaServers>() ??
+                throw new ArgumentNullException("KwikNestaServers section is null");
+
+            services.AddRefitClient<IIdentityServiceClient>()
+                .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.IdentityService));
+
+            return services;
+        }
+
         private static IServiceCollection RegisterGrpcClients(this IServiceCollection services,
                                                               IConfiguration configuration)
         {
-            var grpcServers = configuration.GetSection("GrpcServers").Get<GrpcServers>() ??
+            var grpcServers = configuration.GetSection("KwikNestaServers").Get<KwikNestaServers>() ??
                 throw new ArgumentNullException("GrpcServer section is null");
 
             services.AddSingleton(sp => grpcServers);
