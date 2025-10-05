@@ -1,4 +1,7 @@
 ﻿using DiagnosKit.Core.Extensions;
+using Hangfire;
+using Hangfire.Console;
+using Hangfire.PostgreSql;
 using KwikNesta.Contracts.Models;
 using KwikNesta.Gateway.Svc.API.Grpc.Identity;
 using KwikNesta.Gateway.Svc.API.Grpc.SystemSupport;
@@ -6,10 +9,13 @@ using KwikNesta.Gateway.Svc.API.Services;
 using KwikNesta.Gateway.Svc.API.Services.Interfaces;
 using KwikNesta.Gateway.Svc.API.Settings;
 using KwikNesta.Gateway.Svc.Application.Interfaces;
+using KwikNesta.Gateway.Svc.Infrastructure.Persistence;
+using KwikNesta.Gateway.Svc.Infrastructure.Workers;
 using KwikNesta.SystemSupport.Svc.Contracts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Refit;
@@ -33,6 +39,9 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                     .AllowAnyHeader()
                     .AllowAnyMethod());
             })
+            .RegisterDbContext(configuration)
+            .RegisterWorkers()
+            .ConfigureHangfire(configuration)
             .AddJwtAuth(configuration)
             .AddThrotter()
             .AddSwaggerDocs()
@@ -41,6 +50,53 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
             .AddLoggerManager();
             services.RegisterGrpcClients(configuration)
                 .AddDiagnosKitObservability(serviceName: serviceName, serviceVersion: "1.0.0");
+            return services;
+        }
+
+        private static IServiceCollection ConfigureHangfire(this IServiceCollection services,
+                                                           IConfiguration configuration)
+        {
+            services.AddHangfire(config =>
+            {
+                config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                    .UseSimpleAssemblyNameTypeSerializer()
+                    .UseRecommendedSerializerSettings()
+                    .UsePostgreSqlStorage(opt =>
+                    {
+                        opt.UseNpgsqlConnection(configuration.GetConnectionString("DefaultConnection"));
+                    })
+                    .UseConsole()
+                    .UseFilter(new AutomaticRetryAttribute()
+                    {
+                        Attempts = 5,
+                        DelayInSecondsByAttemptFunc = _ => 60
+                    });
+            }).AddHangfireServer(opt =>
+            {
+                opt.ServerName = "Kwik Nesta Hangfire Server";
+                opt.Queues = new[] { "recurring", "default" };
+                opt.SchedulePollingInterval = TimeSpan.FromMinutes(1);
+                opt.WorkerCount = 5;
+            });
+
+            return services;
+        }
+
+        private static IServiceCollection RegisterDbContext(this IServiceCollection services,
+                                                            IConfiguration configuration)
+        {
+            services.AddDbContext<SupportDbContext>(options =>
+                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+
+            return services;
+        }
+
+        private static IServiceCollection RegisterWorkers(this IServiceCollection services)
+        {
+            services.AddHostedService<NotificationWorker>()
+               .AddHostedService<AuditWorker>()
+               .AddHostedService<DataloadWorker>();
+
             return services;
         }
 
