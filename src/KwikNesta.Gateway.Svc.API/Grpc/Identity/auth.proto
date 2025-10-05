@@ -2,7 +2,12 @@ syntax = "proto3";
 
 option csharp_namespace = "KwikNesta.Gateway.Svc.API.Grpc.Identity";
 
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+
 service AuthenticationService {
+	//Ping
+	rpc Ping (google.protobuf.Empty) returns (google.protobuf.StringValue);
 	// Login
 	rpc Login (LoginRequest) returns (LoginResponse);
 	// Register
@@ -32,6 +37,7 @@ service AuthenticationService {
 }
 
 // ----------------------Messages-------------------------
+
 message EmailRequest {
 	string email = 1;
 }

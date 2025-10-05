@@ -1,7 +1,11 @@
-﻿using KwikNesta.Gateway.Svc.API.DTOs;
+﻿using KwikNesta.Contracts.Models;
+using KwikNesta.Gateway.Svc.API.DTOs;
 using KwikNesta.Gateway.Svc.API.Extensions;
 using KwikNesta.Gateway.Svc.API.Grpc.Identity;
 using KwikNesta.Gateway.Svc.API.Services.Interfaces;
+using KwikNesta.Gateway.Svc.Application.Commands.Identity;
+using KwikNesta.Gateway.Svc.Application.DTOs.Identity;
+using KwikNesta.Gateway.Svc.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,27 +14,29 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
     [Route("api/v{version:apiversion}/auth")]
     [ApiVersion("1.0")]
     [ApiController]
-    public class AuthenticationController : ControllerBase
+    public class AuthenticationController : ApiControllerBase
     {
         private readonly IServiceManager _service;
+        private readonly IIdentityServiceClient _identityService;
 
-        public AuthenticationController(IServiceManager service)
+        public AuthenticationController(IServiceManager service, IIdentityServiceClient identityService)
         {
             _service = service;
+            _identityService = identityService;
         }
 
         /// <summary>
         /// Authenticates a user with the provided credentials and issues access/refresh tokens.
         /// </summary>
         /// <param name="request">
-        /// The <see cref="LoginRequest"/> containing the user's login credentials
+        /// The <see cref="LoginCommand"/> containing the user's login credentials
         /// (e.g., username/email and password).
         /// </param>
         /// <returns>
         /// An <see cref="IActionResult"/> containing:
         /// <list type="bullet">
         ///   <item>
-        ///     <description><see cref="OkObjectResult"/> (200) with a <see cref="TokenResponse"/> 
+        ///     <description><see cref="OkObjectResult"/> (200) with a <see cref="LoginResponseDto"/> 
         ///     if authentication is successful.</description>
         ///   </item>
         ///   <item>
@@ -62,35 +68,33 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         /// }
         /// </code>
         /// </remarks>
-        [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult<LoginResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginCommand request)
         {
-            var tokens = await _service.Authentication.LoginAsync(request);
-            return Ok(tokens);
+            return FromApiResponse(await _identityService.LoginAsyncV1(request));
         }
 
         /// <summary>
         /// Registers a new user account.
         /// </summary>
         /// <param name="request">The registration details including email, password, and other required info.</param>
-        /// <returns>A <see cref="RegisterResponse"/> indicating the result of the registration process.</returns>
+        /// <returns>A <see cref="RegisterResponseDto"/> indicating the result of the registration process.</returns>
         /// <response code="200">Registration successful.</response>
         /// <response code="400">Invalid registration data provided.</response>
         /// <response code="401">Unauthorized attempt to register.</response>
         /// <response code="500">Internal server error.</response>
-        [ProducesResponseType(typeof(RegisterResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(RegisterResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        public async Task<IActionResult> Register([FromBody] RegisterCommand command)
         {
-            var response = await _service.Authentication.RegisterAsync(request);
-            return Ok(response);
+            return FromApiResponse(await _identityService.RegisterAsyncV1(command));
         }
 
         /// <summary>
@@ -105,10 +109,9 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPatch("verify")]
-        public async Task<IActionResult> Verify([FromBody] OtpRequest request)
+        public async Task<IActionResult> Verify([FromBody] VerificationCommand command)
         {
-            var response = await _service.Authentication.VerifyAsync(request);
-            return Ok(response);
+            return FromApiResponse(await _identityService.VerifyAccount(command));
         }
 
         /// <summary>

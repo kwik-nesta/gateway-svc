@@ -1,17 +1,32 @@
-﻿using DiagnosKit.Core.Extensions;
+﻿using CrossQueue.Hub.Shared.Extensions;
+using DiagnosKit.Core.Extensions;
+using DRY.MailJetClient.Library.Extensions;
+using EFCore.CrudKit.Library.Extensions;
+using Hangfire;
+using Hangfire.Console;
+using Hangfire.PostgreSql;
+using KwikNesta.Contracts.Models;
 using KwikNesta.Gateway.Svc.API.Grpc.Identity;
 using KwikNesta.Gateway.Svc.API.Grpc.SystemSupport;
 using KwikNesta.Gateway.Svc.API.Services;
 using KwikNesta.Gateway.Svc.API.Services.Interfaces;
 using KwikNesta.Gateway.Svc.API.Settings;
+using KwikNesta.Gateway.Svc.Application.Interfaces;
+using KwikNesta.Gateway.Svc.Infrastructure.Jobs;
+using KwikNesta.Gateway.Svc.Infrastructure.Persistence;
+using KwikNesta.Gateway.Svc.Infrastructure.Workers;
 using KwikNesta.SystemSupport.Svc.Contracts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Refit;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 using System.Threading.RateLimiting;
 
 namespace KwikNesta.Gateway.Svc.API.Extensions
@@ -30,20 +45,105 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                     .AllowAnyHeader()
                     .AllowAnyMethod());
             })
+            .RegisterDbContext(configuration)
+            .RegisterWorkers()
+            .AddScoped<IMessageProcessor, MessageProcessor>()
+            .ConfigureHangfire(configuration)
             .AddJwtAuth(configuration)
             .AddThrotter()
             .AddSwaggerDocs()
+            .AddCrossQueueHubRabbitMqBus(configuration)
             .AddApiVersion()
+            .ConfigureRefit(configuration)
+            .RegisterGrpcClients(configuration)
+            .AddDiagnosKitObservability(serviceName: serviceName, serviceVersion: "1.0.0")
+            .ConfigureMailJet(configuration)
             .AddLoggerManager();
-            services.RegisterGrpcClients(configuration)
-                .AddDiagnosKitObservability(serviceName: serviceName, serviceVersion: "1.0.0");
+            services
+                .ConfigureEFCoreDataForge<SupportDbContext>(false);
+
+            return services;
+        }
+
+        private static IServiceCollection ConfigureHangfire(this IServiceCollection services,
+                                                           IConfiguration configuration)
+        {
+            services.AddHangfire(config =>
+            {
+                config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                    .UseSimpleAssemblyNameTypeSerializer()
+                    .UseRecommendedSerializerSettings()
+                    .UsePostgreSqlStorage(opt =>
+                    {
+                        opt.UseNpgsqlConnection(configuration.GetConnectionString("DefaultConnection"));
+                    })
+                    .UseConsole()
+                    .UseFilter(new AutomaticRetryAttribute()
+                    {
+                        Attempts = 5,
+                        DelayInSecondsByAttemptFunc = _ => 60
+                    });
+            }).AddHangfireServer(opt =>
+            {
+                opt.ServerName = "Kwik Nesta Hangfire Server";
+                opt.Queues = new[] { "recurring", "default" };
+                opt.SchedulePollingInterval = TimeSpan.FromMinutes(1);
+                opt.WorkerCount = 5;
+            });
+
+            return services;
+        }
+
+        private static IServiceCollection RegisterDbContext(this IServiceCollection services,
+                                                            IConfiguration configuration)
+        {
+            services.AddDbContext<SupportDbContext>(options =>
+                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+
+            return services;
+        }
+
+        private static IServiceCollection RegisterWorkers(this IServiceCollection services)
+        {
+            services.AddHostedService<NotificationWorker>()
+               .AddHostedService<AuditWorker>()
+               .AddHostedService<DataloadWorker>();
+
+            return services;
+        }
+
+        private static IServiceCollection ConfigureRefit(this IServiceCollection services,
+                                                        IConfiguration configuration)
+        {
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            };
+
+            // Refit settings using System.Text.Json with the options above
+            var refitSettings = new RefitSettings
+            {
+                ContentSerializer = new SystemTextJsonContentSerializer(options)
+            };
+
+            var servers = configuration.GetSection("KwikNestaServers").Get<KwikNestaServers>() ??
+                throw new ArgumentNullException("KwikNestaServers section is null");
+
+            services.AddRefitClient<IIdentityServiceClient>(refitSettings)
+                .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.IdentityService));
+
+            services.AddRefitClient<ILocationClientService>(refitSettings)
+                .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.ExternalLocationClient));
+
             return services;
         }
 
         private static IServiceCollection RegisterGrpcClients(this IServiceCollection services,
                                                               IConfiguration configuration)
         {
-            var grpcServers = configuration.GetSection("GrpcServers").Get<GrpcServers>() ??
+            var grpcServers = configuration.GetSection("KwikNestaServers").Get<KwikNestaServers>() ??
                 throw new ArgumentNullException("GrpcServer section is null");
 
             services.AddSingleton(sp => grpcServers);
@@ -163,7 +263,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                     options.TokenValidationParameters = new()
                     {
                         ValidateIssuer = true,
-                        ValidIssuer = jwtSettings.IdentityService,
+                        ValidIssuer = jwtSettings.Issuer,
 
                         ValidateLifetime = true,
 

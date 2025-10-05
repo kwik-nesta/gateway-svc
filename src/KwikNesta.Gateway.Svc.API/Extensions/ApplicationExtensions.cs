@@ -1,10 +1,15 @@
 ﻿using DiagnosKit.Core.Extensions;
+using Hangfire;
+using KwikNesta.Gateway.Svc.API.Filters;
+using KwikNesta.Gateway.Svc.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace KwikNesta.Gateway.Svc.API.Extensions
 {
     public static class ApplicationExtensions
     {
-        public static WebApplication UseMiddlewares(this WebApplication app)
+        public static WebApplication UseMiddlewares(this WebApplication app,
+                                                    IConfiguration configuration)
         {
             // Security headers first (before anything else touches the response)
             app.UseHsts();
@@ -16,8 +21,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                 return next();
             });
 
-            app.UseDiagnosKitPrometheus()
-                .UseDiagnosKitLogEnricher();
+            app.UseDiagnosKitPrometheus();
 
             app.UseSwagger();
             app.UseSwaggerUI(o =>
@@ -41,12 +45,41 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
             // Authorization (enforce [Authorize] / policies)
             app.UseAuthorization();
 
+            app.UseHangfireDashboard(configuration);
+
+            app.RunMigrations(true);
+
             // Controllers / Endpoints (the actual proxy logic)
             app.MapControllers();
 
             // Health endpoints (open access for k8s/ops)
-            app.MapGet("/health/live", () => Results.Ok("OK"));
-            app.MapGet("/health/ready", () => Results.Ok("READY"));
+            app.MapGet("/", () => Results.Ok("OK"));
+
+            return app;
+        }
+
+        private static WebApplication UseHangfireDashboard(this WebApplication app, IConfiguration configuration)
+        {
+            app.UseHangfireDashboard("/admin/jobs", new DashboardOptions
+            {
+                Authorization = new[] { new HangfireAuthorizationFilter(configuration) },
+                DashboardTitle = "Kwik Nesta Hangfire Dashboard",
+                DisplayStorageConnectionString = false,
+                DisplayNameFunc = (_, job) => job.Method.Name,
+                DarkModeEnabled = true,
+            });
+
+            return app;
+        }
+
+        internal static WebApplication RunMigrations(this WebApplication app, bool alwayRun = false)
+        {
+            if (app.Environment.IsDevelopment() || alwayRun)
+            {
+                using var scope = app.Services.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<SupportDbContext>();
+                db.Database.Migrate();
+            }
 
             return app;
         }
