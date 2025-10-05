@@ -7,15 +7,11 @@ using Hangfire.Console;
 using Hangfire.PostgreSql;
 using KwikNesta.Contracts.Models;
 using KwikNesta.Gateway.Svc.API.Grpc.Identity;
-using KwikNesta.Gateway.Svc.API.Grpc.SystemSupport;
-using KwikNesta.Gateway.Svc.API.Services;
-using KwikNesta.Gateway.Svc.API.Services.Interfaces;
 using KwikNesta.Gateway.Svc.API.Settings;
 using KwikNesta.Gateway.Svc.Application.Interfaces;
 using KwikNesta.Gateway.Svc.Infrastructure.Jobs;
 using KwikNesta.Gateway.Svc.Infrastructure.Persistence;
 using KwikNesta.Gateway.Svc.Infrastructure.Workers;
-using KwikNesta.SystemSupport.Svc.Contracts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
@@ -25,8 +21,8 @@ using Microsoft.OpenApi.Models;
 using Refit;
 using System.Security.Claims;
 using System.Text;
-using System.Text.Json.Serialization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 
 namespace KwikNesta.Gateway.Svc.API.Extensions
@@ -37,7 +33,6 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                                                           IConfiguration configuration,
                                                           string serviceName)
         {
-            services.AddScoped<IServiceManager, ServiceManager>();
             services.AddCors(o =>
             {
                 o.AddPolicy("Frontends", p => p
@@ -154,18 +149,6 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
             services.AddGrpcClient<AppUserService.AppUserServiceClient>(o =>
             {
                 o.Address = new Uri(grpcServers.IdentityService);
-            });
-            services.AddGrpcClient<LocationService.LocationServiceClient>(o =>
-            {
-                o.Address = new Uri(grpcServers.SystemSupportService);
-            });
-            services.AddGrpcClient<DataloadService.DataloadServiceClient>(o =>
-            {
-                o.Address = new Uri(grpcServers.SystemSupportService);
-            });
-            services.AddGrpcClient<AuditLogsService.AuditLogsServiceClient>(o =>
-            {
-                o.Address = new Uri(grpcServers.SystemSupportService);
             });
 
             return services;
