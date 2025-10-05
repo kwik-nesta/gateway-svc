@@ -64,11 +64,15 @@ jobs:
           docker push ${{ secrets.HUB_USERNAME }}/kwik-nesta.gateway.svc:${{ steps.get_latest_tag.outputs.tag }}
           docker push ${{ secrets.HUB_USERNAME }}/kwik-nesta.gateway.svc:test
 
+      - name: Trigger Automatic Deploy on Render
+        run: |
+          curl -X POST ${{ secrets.GATEWAY_RENDER_HOOK }}
+
       - name: Send Slack Notification
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           DEPLOYED_VERSION=${{ steps.get_latest_tag.outputs.tag }}
           curl -X POST -H 'Content-type: application/json' --data "{
-            \"text\": \"🚀 *Kwik Nesta Gateway Service Deployed!*\nVersion: \`$DEPLOYED_VERSION\`\nTag: \`live\`\nEnvironment: *Production*\nRender triggered successfully.\"
+            \"text\": \"🚀 *Kwik Nesta Gateway Service Deployed!*\nVersion: \`$DEPLOYED_VERSION\`\nTag: \`test\`\nEnvironment: *Test*\nRender triggered successfully.\"
           }" $SLACK_WEBHOOK_URL

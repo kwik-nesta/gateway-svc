@@ -30,13 +30,6 @@
 	  <Protobuf Include="Grpc\Identity\auth.proto" GrpcServices="Client" />
 	  <Protobuf Include="Grpc\Identity\user.proto" GrpcServices="Client" />
 	  <!--System Support Service-->
-	  <Protobuf Include="Grpc\SystemSupport\location.proto" GrpcServices="Client" />
-	  <Protobuf Include="Grpc\SystemSupport\dataload.proto" GrpcServices="Client" />
-	  <Protobuf Include="Grpc\SystemSupport\auditlogs.proto" GrpcServices="Client" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Grpc\Property\" />
-    <Folder Include="Grpc\Payment\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\KwikNesta.Gateway.Svc.Application\KwikNesta.Gateway.Svc.Application.csproj" />
