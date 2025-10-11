@@ -16,6 +16,5 @@ namespace KwikNesta.Gateway.Svc.API.Controllers
             var error = JsonSerializer.Deserialize<object>(json);
             return StatusCode((int)response.StatusCode, error);
         }
-
     }
 }

@@ -16,9 +16,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Refit;
+using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -110,6 +112,10 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
         private static IServiceCollection ConfigureRefit(this IServiceCollection services,
                                                         IConfiguration configuration)
         {
+            services.AddHttpContextAccessor();
+
+            services.AddTransient<ForwardAuthHeaderHandler>();
+
             var options = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -127,7 +133,8 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                 throw new ArgumentNullException("KwikNestaServers section is null");
 
             services.AddRefitClient<IIdentityServiceClient>(refitSettings)
-                .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.IdentityService));
+                .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.IdentityService))
+                .AddHttpMessageHandler<ForwardAuthHeaderHandler>();
 
             services.AddRefitClient<ILocationClientService>(refitSettings)
                 .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.ExternalLocationClient));
@@ -173,6 +180,10 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
         {
             return services.AddSwaggerGen(c =>
             {
+                var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+                c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Title = "Kwik Nesta API",
@@ -188,7 +199,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                 c.SwaggerDoc("v2", new OpenApiInfo
                 {
                     Title = "Kwik Nesta API",
-                    Version = "v1",
+                    Version = "v2",
                     Description = "Kwik Nesta Gateway API v2.0",
                     Contact = new OpenApiContact
                     {
