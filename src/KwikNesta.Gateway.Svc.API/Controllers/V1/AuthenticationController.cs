@@ -1,6 +1,4 @@
-﻿using Elasticsearch.Net;
-using KwikNesta.Contracts.Models;
-using KwikNesta.Gateway.Svc.API.Grpc.Identity;
+﻿using KwikNesta.Contracts.Models;
 using KwikNesta.Gateway.Svc.Application.Commands.Identity;
 using KwikNesta.Gateway.Svc.Application.DTOs.Identity;
 using KwikNesta.Gateway.Svc.Application.Interfaces;
