@@ -9,10 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers(o =>
-{
-    o.Filters.Add<GrpcExceptionFilter>();
-});
+builder.Services.AddControllers();
 builder.Services
     .RegisterServices(builder.Configuration, builder.Environment.ApplicationName);
 builder.Host.ConfigureSerilogESSink();

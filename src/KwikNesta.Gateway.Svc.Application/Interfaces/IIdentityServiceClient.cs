@@ -3,7 +3,6 @@ using KwikNesta.Gateway.Svc.Application.Commands.Identity;
 using KwikNesta.Gateway.Svc.Application.DTOs.Identity;
 using KwikNesta.Gateway.Svc.Application.Queries.Identity;
 using Refit;
-using System.Data;
 
 namespace KwikNesta.Gateway.Svc.Application.Interfaces
 {

@@ -5,18 +5,13 @@ using EFCore.CrudKit.Library.Extensions;
 using Hangfire;
 using Hangfire.Console;
 using Hangfire.PostgreSql;
-using KwikNesta.Contracts.Models;
-using KwikNesta.Gateway.Svc.API.Grpc.Identity;
 using KwikNesta.Gateway.Svc.API.Settings;
 using KwikNesta.Gateway.Svc.Application.Interfaces;
-using KwikNesta.Gateway.Svc.Infrastructure.Jobs;
-using KwikNesta.Gateway.Svc.Infrastructure.Persistence;
-using KwikNesta.Gateway.Svc.Infrastructure.Workers;
+using KwikNesta.Infrastruture.Svc.API.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Refit;
@@ -42,9 +37,6 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                     .AllowAnyHeader()
                     .AllowAnyMethod());
             })
-            .RegisterDbContext(configuration)
-            .RegisterWorkers()
-            .AddScoped<IMessageProcessor, MessageProcessor>()
             .ConfigureHangfire(configuration)
             .AddJwtAuth(configuration)
             .AddThrotter()
@@ -52,13 +44,10 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
             .AddCrossQueueHubRabbitMqBus(configuration)
             .AddApiVersion()
             .ConfigureRefit(configuration)
-            .RegisterGrpcClients(configuration)
             .AddDiagnosKitObservability(serviceName: serviceName, serviceVersion: "1.0.0")
             .ConfigureMailJet(configuration)
             .AddLoggerManager();
-            services
-                .ConfigureEFCoreDataForge<SupportDbContext>(false);
-
+            
             return services;
         }
 
@@ -91,24 +80,6 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
             return services;
         }
 
-        private static IServiceCollection RegisterDbContext(this IServiceCollection services,
-                                                            IConfiguration configuration)
-        {
-            services.AddDbContext<SupportDbContext>(options =>
-                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
-
-            return services;
-        }
-
-        private static IServiceCollection RegisterWorkers(this IServiceCollection services)
-        {
-            services.AddHostedService<NotificationWorker>()
-               .AddHostedService<AuditWorker>()
-               .AddHostedService<DataloadWorker>();
-
-            return services;
-        }
-
         private static IServiceCollection ConfigureRefit(this IServiceCollection services,
                                                         IConfiguration configuration)
         {
@@ -135,28 +106,6 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
             services.AddRefitClient<IIdentityServiceClient>(refitSettings)
                 .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.IdentityService))
                 .AddHttpMessageHandler<ForwardAuthHeaderHandler>();
-
-            services.AddRefitClient<ILocationClientService>(refitSettings)
-                .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.ExternalLocationClient));
-
-            return services;
-        }
-
-        private static IServiceCollection RegisterGrpcClients(this IServiceCollection services,
-                                                              IConfiguration configuration)
-        {
-            var grpcServers = configuration.GetSection("KwikNestaServers").Get<KwikNestaServers>() ??
-                throw new ArgumentNullException("GrpcServer section is null");
-
-            services.AddSingleton(sp => grpcServers);
-            services.AddGrpcClient<AuthenticationService.AuthenticationServiceClient>(o =>
-            {
-                o.Address = new Uri(grpcServers.IdentityService);
-            });
-            services.AddGrpcClient<AppUserService.AppUserServiceClient>(o =>
-            {
-                o.Address = new Uri(grpcServers.IdentityService);
-            });
 
             return services;
         }
@@ -249,7 +198,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
         private static IServiceCollection AddJwtAuth(this IServiceCollection services, IConfiguration configuration)
         {
             var jwtSettings = configuration.GetSection("Jwt")
-                .Get<JwtSetting>() ?? throw new ArgumentNullException("JWT Config can not be null");
+                .Get<JwtSettings>() ?? throw new ArgumentNullException("JWT Config can not be null");
             
             services.AddAuthentication("Bearer")
                 .AddJwtBearer("Bearer", options =>
@@ -308,7 +257,6 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
 
         private static async Task ValidateUser(TokenValidatedContext context)
         {
-            var service = context.HttpContext.RequestServices.GetRequiredService<AppUserService.AppUserServiceClient>();
             var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
@@ -316,23 +264,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                 return;
             }
 
-            try
-            {
-                var userResponse = await service.GetUserByIdAsync(new GetUserByIdRequest
-                {
-                    UserId = userId
-                });
-                if (userResponse.User == null || userResponse.User.Status != GrpcUserStatus.Active)
-                {
-                    context.Fail("Forbidden: User not found");
-                    return;
-                }
-            }
-            catch (Exception)
-            {
-                context.Fail("Forbidden: User not found");
-                return;
-            }
+            await Task.CompletedTask;
         }
     }
 }
