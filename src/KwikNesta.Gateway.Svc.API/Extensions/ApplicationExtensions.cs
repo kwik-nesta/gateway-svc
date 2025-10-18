@@ -1,8 +1,6 @@
 ﻿using DiagnosKit.Core.Extensions;
 using Hangfire;
 using KwikNesta.Gateway.Svc.API.Filters;
-using KwikNesta.Gateway.Svc.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace KwikNesta.Gateway.Svc.API.Extensions
 {
@@ -47,13 +45,16 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
 
             app.UseHangfireDashboard(configuration);
 
-            app.RunMigrations(true);
-
             // Controllers / Endpoints (the actual proxy logic)
             app.MapControllers();
 
             // Health endpoints (open access for k8s/ops)
-            app.MapGet("/", () => Results.Ok("OK"));
+            app.MapGet("/", () => Results.Ok(new
+            {
+                Status = 200,
+                Successful = true,
+                Message = $"Kwik Nesta Gateway service running in {app.Environment.EnvironmentName} mode..."
+            }));
 
             return app;
         }
@@ -68,18 +69,6 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                 DisplayNameFunc = (_, job) => job.Method.Name,
                 DarkModeEnabled = true,
             });
-
-            return app;
-        }
-
-        internal static WebApplication RunMigrations(this WebApplication app, bool alwayRun = false)
-        {
-            if (app.Environment.IsDevelopment() || alwayRun)
-            {
-                using var scope = app.Services.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<SupportDbContext>();
-                db.Database.Migrate();
-            }
 
             return app;
         }

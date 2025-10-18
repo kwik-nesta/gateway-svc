@@ -7,16 +7,10 @@
     <UserSecretsId>38f62cd1-ac97-45dd-a76e-8bd8f1a6dafc</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>..\..</DockerfileContext>
+	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
+	  <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
  <ItemGroup>
-	<PackageReference Include="Google.Protobuf" Version="3.32.0" />
-	<PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
-	<PackageReference Include="Grpc.Net.Client.Web" Version="2.71.0" />
-	<PackageReference Include="Grpc.Net.ClientFactory" Version="2.71.0" />
-	 <PackageReference Include="Grpc.Tools" Version="2.72.0">
-		<PrivateAssets>all</PrivateAssets>
-		<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-	</PackageReference>
 	 <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
 	 <PackageReference Include="Refit.HttpClientFactory" Version="8.0.0" />
 	<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
@@ -26,14 +20,10 @@
 	 <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.19" />
  </ItemGroup>
   <ItemGroup>
-	  <!--Identity Service-->
-	  <Protobuf Include="Grpc\Identity\auth.proto" GrpcServices="Client" />
-	  <Protobuf Include="Grpc\Identity\user.proto" GrpcServices="Client" />
-	  <!--System Support Service-->
+    <ProjectReference Include="..\KwikNesta.Gateway.Svc.Application\KwikNesta.Gateway.Svc.Application.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\KwikNesta.Gateway.Svc.Application\KwikNesta.Gateway.Svc.Application.csproj" />
-    <ProjectReference Include="..\KwikNesta.Gateway.Svc.Infrastructure\KwikNesta.Gateway.Svc.Infrastructure.csproj" />
+    <Folder Include="Middlewares\" />
   </ItemGroup>
 
 </Project>

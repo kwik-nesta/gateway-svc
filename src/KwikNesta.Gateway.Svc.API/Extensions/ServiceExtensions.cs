@@ -1,17 +1,10 @@
-﻿using CrossQueue.Hub.Shared.Extensions;
-using DiagnosKit.Core.Extensions;
-using DRY.MailJetClient.Library.Extensions;
-using EFCore.CrudKit.Library.Extensions;
+﻿using DiagnosKit.Core.Extensions;
 using Hangfire;
 using Hangfire.Console;
 using Hangfire.PostgreSql;
-using KwikNesta.Contracts.Models;
-using KwikNesta.Gateway.Svc.API.Grpc.Identity;
 using KwikNesta.Gateway.Svc.API.Settings;
 using KwikNesta.Gateway.Svc.Application.Interfaces;
-using KwikNesta.Gateway.Svc.Infrastructure.Jobs;
-using KwikNesta.Gateway.Svc.Infrastructure.Persistence;
-using KwikNesta.Gateway.Svc.Infrastructure.Workers;
+using KwikNesta.Infrastruture.Svc.API.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
@@ -19,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Refit;
+using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -40,28 +34,21 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                     .AllowAnyHeader()
                     .AllowAnyMethod());
             })
-            .RegisterDbContext(configuration)
-            .RegisterWorkers()
-            .AddScoped<IMessageProcessor, MessageProcessor>()
-            .ConfigureHangfire(configuration)
+            .ConfigureHangfire(configuration, serviceName)
             .AddJwtAuth(configuration)
             .AddThrotter()
             .AddSwaggerDocs()
-            .AddCrossQueueHubRabbitMqBus(configuration)
             .AddApiVersion()
             .ConfigureRefit(configuration)
-            .RegisterGrpcClients(configuration)
             .AddDiagnosKitObservability(serviceName: serviceName, serviceVersion: "1.0.0")
-            .ConfigureMailJet(configuration)
             .AddLoggerManager();
-            services
-                .ConfigureEFCoreDataForge<SupportDbContext>(false);
-
+            
             return services;
         }
 
         private static IServiceCollection ConfigureHangfire(this IServiceCollection services,
-                                                           IConfiguration configuration)
+                                                           IConfiguration configuration,
+                                                           string serviceName)
         {
             services.AddHangfire(config =>
             {
@@ -71,6 +58,10 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                     .UsePostgreSqlStorage(opt =>
                     {
                         opt.UseNpgsqlConnection(configuration.GetConnectionString("DefaultConnection"));
+                    }, new PostgreSqlStorageOptions
+                    {
+                        SchemaName = "gateway-hangfire",
+                        PrepareSchemaIfNecessary = true
                     })
                     .UseConsole()
                     .UseFilter(new AutomaticRetryAttribute()
@@ -89,27 +80,13 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
             return services;
         }
 
-        private static IServiceCollection RegisterDbContext(this IServiceCollection services,
-                                                            IConfiguration configuration)
-        {
-            services.AddDbContext<SupportDbContext>(options =>
-                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
-
-            return services;
-        }
-
-        private static IServiceCollection RegisterWorkers(this IServiceCollection services)
-        {
-            services.AddHostedService<NotificationWorker>()
-               .AddHostedService<AuditWorker>()
-               .AddHostedService<DataloadWorker>();
-
-            return services;
-        }
-
         private static IServiceCollection ConfigureRefit(this IServiceCollection services,
                                                         IConfiguration configuration)
         {
+            services.AddHttpContextAccessor();
+
+            services.AddTransient<ForwardAuthHeaderHandler>();
+
             var options = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -127,29 +104,8 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                 throw new ArgumentNullException("KwikNestaServers section is null");
 
             services.AddRefitClient<IIdentityServiceClient>(refitSettings)
-                .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.IdentityService));
-
-            services.AddRefitClient<ILocationClientService>(refitSettings)
-                .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.ExternalLocationClient));
-
-            return services;
-        }
-
-        private static IServiceCollection RegisterGrpcClients(this IServiceCollection services,
-                                                              IConfiguration configuration)
-        {
-            var grpcServers = configuration.GetSection("KwikNestaServers").Get<KwikNestaServers>() ??
-                throw new ArgumentNullException("GrpcServer section is null");
-
-            services.AddSingleton(sp => grpcServers);
-            services.AddGrpcClient<AuthenticationService.AuthenticationServiceClient>(o =>
-            {
-                o.Address = new Uri(grpcServers.IdentityService);
-            });
-            services.AddGrpcClient<AppUserService.AppUserServiceClient>(o =>
-            {
-                o.Address = new Uri(grpcServers.IdentityService);
-            });
+                .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.IdentityService))
+                .AddHttpMessageHandler<ForwardAuthHeaderHandler>();
 
             return services;
         }
@@ -173,6 +129,10 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
         {
             return services.AddSwaggerGen(c =>
             {
+                var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+                c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Title = "Kwik Nesta API",
@@ -188,7 +148,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                 c.SwaggerDoc("v2", new OpenApiInfo
                 {
                     Title = "Kwik Nesta API",
-                    Version = "v1",
+                    Version = "v2",
                     Description = "Kwik Nesta Gateway API v2.0",
                     Contact = new OpenApiContact
                     {
@@ -238,7 +198,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
         private static IServiceCollection AddJwtAuth(this IServiceCollection services, IConfiguration configuration)
         {
             var jwtSettings = configuration.GetSection("Jwt")
-                .Get<JwtSetting>() ?? throw new ArgumentNullException("JWT Config can not be null");
+                .Get<JwtSettings>() ?? throw new ArgumentNullException("JWT Config can not be null");
             
             services.AddAuthentication("Bearer")
                 .AddJwtBearer("Bearer", options =>
@@ -297,7 +257,6 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
 
         private static async Task ValidateUser(TokenValidatedContext context)
         {
-            var service = context.HttpContext.RequestServices.GetRequiredService<AppUserService.AppUserServiceClient>();
             var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
@@ -305,23 +264,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                 return;
             }
 
-            try
-            {
-                var userResponse = await service.GetUserByIdAsync(new GetUserByIdRequest
-                {
-                    UserId = userId
-                });
-                if (userResponse.User == null || userResponse.User.Status != GrpcUserStatus.Active)
-                {
-                    context.Fail("Forbidden: User not found");
-                    return;
-                }
-            }
-            catch (Exception)
-            {
-                context.Fail("Forbidden: User not found");
-                return;
-            }
+            await Task.CompletedTask;
         }
     }
 }
