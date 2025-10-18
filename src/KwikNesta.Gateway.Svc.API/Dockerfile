@@ -14,7 +14,6 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["src/KwikNesta.Gateway.Svc.API/KwikNesta.Gateway.Svc.API.csproj", "src/KwikNesta.Gateway.Svc.API/"]
 COPY ["src/KwikNesta.Gateway.Svc.Application/KwikNesta.Gateway.Svc.Application.csproj", "src/KwikNesta.Gateway.Svc.Application/"]
-COPY ["src/KwikNesta.Gateway.Svc.Infrastructure/KwikNesta.Gateway.Svc.Infrastructure.csproj", "src/KwikNesta.Gateway.Svc.Infrastructure/"]
 RUN dotnet restore "./src/KwikNesta.Gateway.Svc.API/KwikNesta.Gateway.Svc.API.csproj"
 COPY . .
 WORKDIR "/src/src/KwikNesta.Gateway.Svc.API"
