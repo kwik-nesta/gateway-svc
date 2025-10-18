@@ -49,7 +49,12 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
             app.MapControllers();
 
             // Health endpoints (open access for k8s/ops)
-            app.MapGet("/", () => Results.Ok("OK"));
+            app.MapGet("/", () => Results.Ok(new
+            {
+                Status = 200,
+                Successful = true,
+                Message = $"Kwik Nesta Gateway service running in {app.Environment.EnvironmentName} mode..."
+            }));
 
             return app;
         }

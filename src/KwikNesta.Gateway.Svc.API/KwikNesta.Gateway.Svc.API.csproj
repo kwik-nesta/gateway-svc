@@ -21,7 +21,9 @@
  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\KwikNesta.Gateway.Svc.Application\KwikNesta.Gateway.Svc.Application.csproj" />
-    <ProjectReference Include="..\KwikNesta.Gateway.Svc.Infrastructure\KwikNesta.Gateway.Svc.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Middlewares\" />
   </ItemGroup>
 
 </Project>

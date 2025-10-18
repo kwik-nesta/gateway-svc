@@ -1,7 +1,4 @@
-﻿using CrossQueue.Hub.Shared.Extensions;
-using DiagnosKit.Core.Extensions;
-using DRY.MailJetClient.Library.Extensions;
-using EFCore.CrudKit.Library.Extensions;
+﻿using DiagnosKit.Core.Extensions;
 using Hangfire;
 using Hangfire.Console;
 using Hangfire.PostgreSql;
@@ -37,22 +34,21 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                     .AllowAnyHeader()
                     .AllowAnyMethod());
             })
-            .ConfigureHangfire(configuration)
+            .ConfigureHangfire(configuration, serviceName)
             .AddJwtAuth(configuration)
             .AddThrotter()
             .AddSwaggerDocs()
-            .AddCrossQueueHubRabbitMqBus(configuration)
             .AddApiVersion()
             .ConfigureRefit(configuration)
             .AddDiagnosKitObservability(serviceName: serviceName, serviceVersion: "1.0.0")
-            .ConfigureMailJet(configuration)
             .AddLoggerManager();
             
             return services;
         }
 
         private static IServiceCollection ConfigureHangfire(this IServiceCollection services,
-                                                           IConfiguration configuration)
+                                                           IConfiguration configuration,
+                                                           string serviceName)
         {
             services.AddHangfire(config =>
             {
@@ -62,6 +58,10 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                     .UsePostgreSqlStorage(opt =>
                     {
                         opt.UseNpgsqlConnection(configuration.GetConnectionString("DefaultConnection"));
+                    }, new PostgreSqlStorageOptions
+                    {
+                        SchemaName = "gateway-hangfire",
+                        PrepareSchemaIfNecessary = true
                     })
                     .UseConsole()
                     .UseFilter(new AutomaticRetryAttribute()

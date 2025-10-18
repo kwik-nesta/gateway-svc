@@ -1,8 +1,8 @@
 using DiagnosKit.Core.Configurations;
 using DiagnosKit.Core.Logging;
 using DiagnosKit.Core.Logging.Contracts;
+using DiagnosKit.Core.Middlewares;
 using KwikNesta.Gateway.Svc.API.Extensions;
-using KwikNesta.Gateway.Svc.API.Middlewares;
 
 SerilogBootstrapper.UseBootstrapLogger();
 var builder = WebApplication.CreateBuilder(args);
@@ -19,7 +19,7 @@ builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 var logger = app.Services.GetRequiredService<ILoggerManager>();
-app.UseGlobalExceptionHandler(logger);
+app.UseDiagnosKitExceptionHandler(logger);
 app.UseMiddlewares(builder.Configuration);
 
 app.Run();
