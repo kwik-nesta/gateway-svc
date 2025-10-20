@@ -1,4 +1,4 @@
-﻿namespace KwikNesta.Gateway.Svc.Application.DTOs
+﻿namespace KwikNesta.Gateway.Svc.Application.DTOs.Infrastructure
 {
     public class AuditTrailDto
     {

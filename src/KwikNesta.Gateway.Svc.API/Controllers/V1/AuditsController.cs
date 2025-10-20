@@ -1,5 +1,5 @@
 ﻿using KwikNesta.Contracts.Models;
-using KwikNesta.Gateway.Svc.Application.DTOs;
+using KwikNesta.Gateway.Svc.Application.DTOs.Infrastructure;
 using KwikNesta.Gateway.Svc.Application.Interfaces;
 using KwikNesta.Gateway.Svc.Application.Queries.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
