@@ -1,5 +1,7 @@
 ﻿using DiagnosKit.Core.Extensions;
 using Hangfire;
+using KwikNesta.Contracts.Filters;
+using KwikNesta.Contracts.Settings;
 using KwikNesta.Gateway.Svc.API.Filters;
 
 namespace KwikNesta.Gateway.Svc.API.Extensions
@@ -61,9 +63,12 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
 
         private static WebApplication UseHangfireDashboard(this WebApplication app, IConfiguration configuration)
         {
+            var settings = configuration.GetSection("HangfireSettings")
+                .Get<HangfireSettings>() ?? throw new ArgumentNullException("HangfireSettings");
+
             app.UseHangfireDashboard("/admin/jobs", new DashboardOptions
             {
-                Authorization = new[] { new HangfireAuthorizationFilter(configuration) },
+                Authorization = new[] { new HangfireAuthFilter(settings) },
                 DashboardTitle = "Kwik Nesta Hangfire Dashboard",
                 DisplayStorageConnectionString = false,
                 DisplayNameFunc = (_, job) => job.Method.Name,

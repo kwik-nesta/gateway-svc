@@ -1,10 +1,11 @@
-﻿using DiagnosKit.Core.Extensions;
+﻿using CrossQueue.Hub.Models;
+using CrossQueue.Hub.Shared.Extensions;
+using DiagnosKit.Core.Extensions;
 using Hangfire;
 using Hangfire.Console;
 using Hangfire.PostgreSql;
-using KwikNesta.Gateway.Svc.API.Settings;
+using KwikNesta.Contracts.Settings;
 using KwikNesta.Gateway.Svc.Application.Interfaces;
-using KwikNesta.Infrastruture.Svc.API.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
@@ -12,7 +13,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Refit;
-using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -39,6 +39,23 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
             .AddThrotter()
             .AddSwaggerDocs()
             .AddApiVersion()
+            .AddCrossQueueHubRabbitMqBus(opt =>
+            {
+                var settings = configuration.GetSection("RabbitMQ")
+                    .Get<QueueSettings>() ?? throw new ArgumentNullException("RabbitMQ");
+                opt.RabbitMQ = new RabbitMQOptions
+                {
+                    ConnectionString = settings.ConnectionString,
+                    ConsumerRetryCount = 5,
+                    ConsumerRetryDelayMs = 500,
+                    Durable = true,
+                    PublishRetryCount = 5,
+                    PublishRetryDelayMs = 500,
+                    DefaultExchangeType = settings.ExchangeType,
+                    DeadLetterExchange = settings.DeadLetterExchange,
+                    DefaultExchange = settings.Exchange
+                };
+            })
             .ConfigureRefit(configuration)
             .AddDiagnosKitObservability(serviceName: serviceName, serviceVersion: "1.0.0")
             .AddLoggerManager();
@@ -100,11 +117,23 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                 ContentSerializer = new SystemTextJsonContentSerializer(options)
             };
 
-            var servers = configuration.GetSection("KwikNestaServers").Get<KwikNestaServers>() ??
+            var servers = configuration.GetSection("KwikNestaServers").Get<ServiceUrls>() ??
                 throw new ArgumentNullException("KwikNestaServers section is null");
 
             services.AddRefitClient<IIdentityServiceClient>(refitSettings)
-                .ConfigureHttpClient(c => c.BaseAddress = new Uri(servers.IdentityService))
+                .ConfigureHttpClient(c =>
+                {
+                    c.BaseAddress = new Uri(servers.IdentityService);
+                    c.Timeout = TimeSpan.FromSeconds(60);
+                })
+                .AddHttpMessageHandler<ForwardAuthHeaderHandler>();
+
+            services.AddRefitClient<IInfrastructureServiceClient>(refitSettings)
+                .ConfigureHttpClient(c =>
+                {
+                    c.BaseAddress = new Uri(servers.SupportService);
+                    c.Timeout = TimeSpan.FromSeconds(60);
+                })
                 .AddHttpMessageHandler<ForwardAuthHeaderHandler>();
 
             return services;
@@ -129,9 +158,11 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
         {
             return services.AddSwaggerGen(c =>
             {
-                var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
-                c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+                var xmlFiles = Directory.GetFiles(AppContext.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
+                foreach (var xmlFile in xmlFiles)
+                {
+                    c.IncludeXmlComments(xmlFile);
+                }
 
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
