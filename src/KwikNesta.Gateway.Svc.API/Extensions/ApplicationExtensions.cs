@@ -2,7 +2,9 @@
 using Hangfire;
 using KwikNesta.Contracts.Filters;
 using KwikNesta.Contracts.Settings;
-using KwikNesta.Gateway.Svc.API.Filters;
+using KwikNesta.Gateway.Svc.Application.Services;
+using KwikNesta.Gateway.Svc.Application.Settings;
+using Microsoft.Extensions.Options;
 
 namespace KwikNesta.Gateway.Svc.API.Extensions
 {
@@ -47,6 +49,8 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
 
             app.UseHangfireDashboard(configuration);
 
+            app.ScheduleServicePings();
+
             // Controllers / Endpoints (the actual proxy logic)
             app.MapControllers();
 
@@ -74,6 +78,20 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                 DisplayNameFunc = (_, job) => job.Method.Name,
                 DarkModeEnabled = true,
             });
+
+            return app;
+        }
+
+        private static WebApplication ScheduleServicePings(this WebApplication app)
+        {
+            var pingJobOptions = app.Services
+                .GetRequiredService<IOptions<PingSettings>>().Value;
+
+            RecurringJob.AddOrUpdate<PingService>(
+                "ping-all-services",
+                job => job.PingAllAsync(null!),
+                pingJobOptions.Interval
+            );
 
             return app;
         }

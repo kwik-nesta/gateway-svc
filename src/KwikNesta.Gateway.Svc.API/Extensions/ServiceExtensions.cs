@@ -1,11 +1,13 @@
 ﻿using CrossQueue.Hub.Models;
 using CrossQueue.Hub.Shared.Extensions;
+using DiagnosKit.Core.Configurations;
 using DiagnosKit.Core.Extensions;
 using Hangfire;
 using Hangfire.Console;
 using Hangfire.PostgreSql;
 using KwikNesta.Contracts.Settings;
 using KwikNesta.Gateway.Svc.Application.Interfaces;
+using KwikNesta.Gateway.Svc.Application.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
@@ -27,6 +29,11 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                                                           IConfiguration configuration,
                                                           string serviceName)
         {
+            services.AddHttpClient("ServicePinger");
+            services
+                .Configure<PingSettings>(configuration
+                .GetSection("PingSettings"));
+
             services.AddCors(o =>
             {
                 o.AddPolicy("Frontends", p => p
@@ -61,6 +68,22 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
             .AddLoggerManager();
             
             return services;
+        }
+
+        public static void ConfigureESSink(this IHostBuilder host,
+                                           IConfiguration configuration)
+        {
+            host.ConfigureSerilogESSink(opt =>
+            {
+                var settings = configuration.GetSection("ElasticSearch")
+                    .Get<ElasticSettings>() ?? throw new ArgumentNullException("ElasticSearch");
+
+                opt.Url = settings.Url;
+                opt.Username = settings.UserName;
+                opt.Password = settings.Password;
+                opt.IndexPrefix = settings.IndexPrefix;
+                opt.IndexFormat = settings.IndexFormat;
+            });
         }
 
         private static IServiceCollection ConfigureHangfire(this IServiceCollection services,
