@@ -1,17 +1,24 @@
-﻿using DiagnosKit.Core.Extensions;
-using KwikNesta.Gateway.Svc.API.Grpc.Identity;
-using KwikNesta.Gateway.Svc.API.Grpc.SystemSupport;
-using KwikNesta.Gateway.Svc.API.Services;
-using KwikNesta.Gateway.Svc.API.Services.Interfaces;
-using KwikNesta.Gateway.Svc.API.Settings;
-using KwikNesta.SystemSupport.Svc.Contracts;
+﻿using CrossQueue.Hub.Models;
+using CrossQueue.Hub.Shared.Extensions;
+using DiagnosKit.Core.Configurations;
+using DiagnosKit.Core.Extensions;
+using Hangfire;
+using Hangfire.Console;
+using Hangfire.PostgreSql;
+using KwikNesta.Contracts.Settings;
+using KwikNesta.Gateway.Svc.Application.Interfaces;
+using KwikNesta.Gateway.Svc.Application.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Refit;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 
 namespace KwikNesta.Gateway.Svc.API.Extensions
@@ -22,7 +29,11 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                                                           IConfiguration configuration,
                                                           string serviceName)
         {
-            services.AddScoped<IServiceManager, ServiceManager>();
+            services.AddHttpClient("ServicePinger");
+            services
+                .Configure<PingSettings>(configuration
+                .GetSection("PingSettings"));
+
             services.AddCors(o =>
             {
                 o.AddPolicy("Frontends", p => p
@@ -30,43 +41,123 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                     .AllowAnyHeader()
                     .AllowAnyMethod());
             })
+            .ConfigureHangfire(configuration, serviceName)
             .AddJwtAuth(configuration)
             .AddThrotter()
             .AddSwaggerDocs()
             .AddApiVersion()
+            .AddCrossQueueHubRabbitMqBus(opt =>
+            {
+                var settings = configuration.GetSection("RabbitMQ")
+                    .Get<QueueSettings>() ?? throw new ArgumentNullException("RabbitMQ");
+                opt.RabbitMQ = new RabbitMQOptions
+                {
+                    ConnectionString = settings.ConnectionString,
+                    ConsumerRetryCount = 5,
+                    ConsumerRetryDelayMs = 500,
+                    Durable = true,
+                    PublishRetryCount = 5,
+                    PublishRetryDelayMs = 500,
+                    DefaultExchangeType = settings.ExchangeType,
+                    DeadLetterExchange = settings.DeadLetterExchange,
+                    DefaultExchange = settings.Exchange
+                };
+            })
+            .ConfigureRefit(configuration)
+            .AddDiagnosKitObservability(serviceName: serviceName, serviceVersion: "1.0.0")
             .AddLoggerManager();
-            services.RegisterGrpcClients(configuration)
-                .AddDiagnosKitObservability(serviceName: serviceName, serviceVersion: "1.0.0");
+            
             return services;
         }
 
-        private static IServiceCollection RegisterGrpcClients(this IServiceCollection services,
-                                                              IConfiguration configuration)
+        public static void ConfigureESSink(this IHostBuilder host,
+                                           IConfiguration configuration)
         {
-            var grpcServers = configuration.GetSection("GrpcServers").Get<GrpcServers>() ??
-                throw new ArgumentNullException("GrpcServer section is null");
+            host.ConfigureSerilogESSink(opt =>
+            {
+                var settings = configuration.GetSection("ElasticSearch")
+                    .Get<ElasticSettings>() ?? throw new ArgumentNullException("ElasticSearch");
 
-            services.AddSingleton(sp => grpcServers);
-            services.AddGrpcClient<AuthenticationService.AuthenticationServiceClient>(o =>
-            {
-                o.Address = new Uri(grpcServers.IdentityService);
+                opt.Url = settings.Url;
+                opt.Username = settings.UserName;
+                opt.Password = settings.Password;
+                opt.IndexPrefix = settings.IndexPrefix;
+                opt.IndexFormat = settings.IndexFormat;
             });
-            services.AddGrpcClient<AppUserService.AppUserServiceClient>(o =>
+        }
+
+        private static IServiceCollection ConfigureHangfire(this IServiceCollection services,
+                                                           IConfiguration configuration,
+                                                           string serviceName)
+        {
+            services.AddHangfire(config =>
             {
-                o.Address = new Uri(grpcServers.IdentityService);
-            });
-            services.AddGrpcClient<LocationService.LocationServiceClient>(o =>
+                config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                    .UseSimpleAssemblyNameTypeSerializer()
+                    .UseRecommendedSerializerSettings()
+                    .UsePostgreSqlStorage(opt =>
+                    {
+                        opt.UseNpgsqlConnection(configuration.GetConnectionString("DefaultConnection"));
+                    }, new PostgreSqlStorageOptions
+                    {
+                        SchemaName = "gateway-hangfire",
+                        PrepareSchemaIfNecessary = true
+                    })
+                    .UseConsole()
+                    .UseFilter(new AutomaticRetryAttribute()
+                    {
+                        Attempts = 5,
+                        DelayInSecondsByAttemptFunc = _ => 60
+                    });
+            }).AddHangfireServer(opt =>
             {
-                o.Address = new Uri(grpcServers.SystemSupportService);
+                opt.ServerName = "Kwik Nesta Hangfire Server";
+                opt.Queues = new[] { "recurring", "default" };
+                opt.SchedulePollingInterval = TimeSpan.FromMinutes(1);
+                opt.WorkerCount = 5;
             });
-            services.AddGrpcClient<DataloadService.DataloadServiceClient>(o =>
+
+            return services;
+        }
+
+        private static IServiceCollection ConfigureRefit(this IServiceCollection services,
+                                                        IConfiguration configuration)
+        {
+            services.AddHttpContextAccessor();
+
+            services.AddTransient<ForwardAuthHeaderHandler>();
+
+            var options = new JsonSerializerOptions
             {
-                o.Address = new Uri(grpcServers.SystemSupportService);
-            });
-            services.AddGrpcClient<AuditLogsService.AuditLogsServiceClient>(o =>
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            };
+
+            // Refit settings using System.Text.Json with the options above
+            var refitSettings = new RefitSettings
             {
-                o.Address = new Uri(grpcServers.SystemSupportService);
-            });
+                ContentSerializer = new SystemTextJsonContentSerializer(options)
+            };
+
+            var servers = configuration.GetSection("KwikNestaServers").Get<ServiceUrls>() ??
+                throw new ArgumentNullException("KwikNestaServers section is null");
+
+            services.AddRefitClient<IIdentityServiceClient>(refitSettings)
+                .ConfigureHttpClient(c =>
+                {
+                    c.BaseAddress = new Uri(servers.IdentityService);
+                    c.Timeout = TimeSpan.FromSeconds(60);
+                })
+                .AddHttpMessageHandler<ForwardAuthHeaderHandler>();
+
+            services.AddRefitClient<IInfrastructureServiceClient>(refitSettings)
+                .ConfigureHttpClient(c =>
+                {
+                    c.BaseAddress = new Uri(servers.SupportService);
+                    c.Timeout = TimeSpan.FromSeconds(60);
+                })
+                .AddHttpMessageHandler<ForwardAuthHeaderHandler>();
 
             return services;
         }
@@ -90,6 +181,12 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
         {
             return services.AddSwaggerGen(c =>
             {
+                var xmlFiles = Directory.GetFiles(AppContext.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
+                foreach (var xmlFile in xmlFiles)
+                {
+                    c.IncludeXmlComments(xmlFile);
+                }
+
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Title = "Kwik Nesta API",
@@ -105,7 +202,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                 c.SwaggerDoc("v2", new OpenApiInfo
                 {
                     Title = "Kwik Nesta API",
-                    Version = "v1",
+                    Version = "v2",
                     Description = "Kwik Nesta Gateway API v2.0",
                     Contact = new OpenApiContact
                     {
@@ -155,7 +252,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
         private static IServiceCollection AddJwtAuth(this IServiceCollection services, IConfiguration configuration)
         {
             var jwtSettings = configuration.GetSection("Jwt")
-                .Get<JwtSetting>() ?? throw new ArgumentNullException("JWT Config can not be null");
+                .Get<JwtSettings>() ?? throw new ArgumentNullException("JWT Config can not be null");
             
             services.AddAuthentication("Bearer")
                 .AddJwtBearer("Bearer", options =>
@@ -163,7 +260,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                     options.TokenValidationParameters = new()
                     {
                         ValidateIssuer = true,
-                        ValidIssuer = jwtSettings.IdentityService,
+                        ValidIssuer = jwtSettings.Issuer,
 
                         ValidateLifetime = true,
 
@@ -214,7 +311,6 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
 
         private static async Task ValidateUser(TokenValidatedContext context)
         {
-            var service = context.HttpContext.RequestServices.GetRequiredService<AppUserService.AppUserServiceClient>();
             var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
@@ -222,23 +318,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                 return;
             }
 
-            try
-            {
-                var userResponse = await service.GetUserByIdAsync(new GetUserByIdRequest
-                {
-                    UserId = userId
-                });
-                if (userResponse.User == null || userResponse.User.Status != GrpcUserStatus.Active)
-                {
-                    context.Fail("Forbidden: User not found");
-                    return;
-                }
-            }
-            catch (Exception)
-            {
-                context.Fail("Forbidden: User not found");
-                return;
-            }
+            await Task.CompletedTask;
         }
     }
 }
