@@ -147,7 +147,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                 .ConfigureHttpClient(c =>
                 {
                     c.BaseAddress = new Uri(servers.IdentityService);
-                    c.Timeout = TimeSpan.FromSeconds(60);
+                    c.Timeout = TimeSpan.FromSeconds(120);
                 })
                 .AddHttpMessageHandler<ForwardAuthHeaderHandler>();
 
