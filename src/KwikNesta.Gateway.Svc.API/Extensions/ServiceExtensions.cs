@@ -5,6 +5,7 @@ using DiagnosKit.Core.Extensions;
 using Hangfire;
 using Hangfire.Console;
 using Hangfire.PostgreSql;
+using KwikNesta.Contracts.Http;
 using KwikNesta.Contracts.Settings;
 using KwikNesta.Gateway.Svc.Application.Interfaces;
 using KwikNesta.Gateway.Svc.Application.Settings;
@@ -124,7 +125,6 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                                                         IConfiguration configuration)
         {
             services.AddHttpContextAccessor();
-
             services.AddTransient<ForwardAuthHeaderHandler>();
 
             var options = new JsonSerializerOptions
@@ -149,6 +149,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                     c.BaseAddress = new Uri(servers.IdentityService);
                     c.Timeout = TimeSpan.FromSeconds(120);
                 })
+                .AddHttpMessageHandler(() => new ServiceRefitWakeUpHandler())
                 .AddHttpMessageHandler<ForwardAuthHeaderHandler>();
 
             services.AddRefitClient<IInfrastructureServiceClient>(refitSettings)
@@ -157,6 +158,7 @@ namespace KwikNesta.Gateway.Svc.API.Extensions
                     c.BaseAddress = new Uri(servers.SupportService);
                     c.Timeout = TimeSpan.FromSeconds(60);
                 })
+                .AddHttpMessageHandler(() => new ServiceRefitWakeUpHandler())
                 .AddHttpMessageHandler<ForwardAuthHeaderHandler>();
 
             return services;
