@@ -32,6 +32,20 @@ namespace KwikNesta.Gateway.Svc.API.Controllers.V1
         }
 
         /// <summary>
+        /// Gets a country by id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet("countries/{id}")]
+        [ProducesResponseType(typeof(ApiResult<CountryDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult<string>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResult<string>), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetCountry([FromRoute] Guid id)
+        {
+            return FromApiResponse(await _infrastructure.GetCountryV1(id));
+        }
+
+        /// <summary>
         /// Get a list of states by country id
         /// </summary>
         /// <param name="countryId"></param>

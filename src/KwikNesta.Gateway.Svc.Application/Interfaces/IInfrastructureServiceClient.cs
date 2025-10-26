@@ -23,6 +23,14 @@ namespace KwikNesta.Gateway.Svc.Application.Interfaces
         Task<ApiResponse<ApiResult<Paginator<CountryDto>>>> GetCountriesV1([Query] GetPagedCountriesQuery query);
 
         /// <summary>
+        /// Get country by id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [Get("/api/v1/locations/countries/{id}")]
+        Task<ApiResponse<ApiResult<CountryDto>>> GetCountryV1(Guid id);
+
+        /// <summary>
         /// Gets all the states in a given country
         /// </summary>
         /// <param name="countryId"></param>
